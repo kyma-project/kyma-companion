@@ -1,14 +1,10 @@
 """Tests for the dynamic topic taxonomy (areas, intents)."""
 
-import pytest
-
 from conversation_segmentation.taxonomy import (
     TAXONOMY_VERSION,
     Area,
     Intent,
 )
-
-pytestmark = pytest.mark.unit
 
 
 def test_areas_and_intents_include_other_fallback():

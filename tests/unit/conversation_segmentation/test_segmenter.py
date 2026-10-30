@@ -9,8 +9,6 @@ from pydantic import ValidationError
 from conversation_segmentation.segmenter import Segmenter, TurnTopic
 from conversation_segmentation.taxonomy import Area, Intent
 
-pytestmark = pytest.mark.unit
-
 
 def _raw(inp, out):
     """Create a mock AIMessage with usage_metadata."""
@@ -53,4 +51,16 @@ def test_turn_topic_rejects_out_of_range_confidence(bad_confidence):
             topic="mTLS not working",
             summary="generic summary",
             confidence=bad_confidence,
+        )
+
+
+def test_turn_topic_rejects_oversized_capability():
+    with pytest.raises(ValidationError):
+        TurnTopic(
+            area=Area.ISTIO,
+            intent=Intent.TROUBLESHOOTING,
+            capability="a" * 129,
+            topic="mTLS not working",
+            summary="generic summary",
+            confidence=0.5,
         )

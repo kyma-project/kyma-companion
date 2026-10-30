@@ -3,6 +3,7 @@
 import pytest
 
 from conversation_segmentation.canonicalizer import (
+    MAX_CAPABILITY_LEN,
     build_topic_key,
     canonical_capability,
     canonicalize,
@@ -11,8 +12,6 @@ from conversation_segmentation.canonicalizer import (
     slugify,
 )
 from conversation_segmentation.taxonomy import Area, Intent
-
-pytestmark = pytest.mark.unit
 
 
 def test_slugify_normalizes_to_hyphenated_lowercase():
@@ -29,6 +28,19 @@ def test_canonical_capability_slugifies_without_folding():
 
 def test_canonical_capability_defaults_to_general_when_empty():
     assert canonical_capability("   ") == "general"
+
+
+def test_oversized_capability_is_shortened_with_a_stable_hash_suffix():
+    first = canonical_capability("capability " * 30)
+    second = canonical_capability("capability " * 29 + "routing")
+    assert len(first) == MAX_CAPABILITY_LEN
+    assert first == canonical_capability("capability " * 30)
+    assert first != second
+
+
+def test_topic_key_rejects_values_over_the_persistence_limit():
+    with pytest.raises(ValueError, match="persistence limit"):
+        build_topic_key(Area.ISTIO, Intent.TROUBLESHOOTING, "a" * 256)
 
 
 def test_same_capability_wording_shares_one_topic_key():

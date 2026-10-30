@@ -7,8 +7,6 @@ import pytest
 from conversation_segmentation import hana_writer
 from conversation_segmentation.aggregator import AssignmentState
 
-pytestmark = pytest.mark.unit
-
 _BULK_SIZE = 2
 
 
@@ -96,6 +94,12 @@ def test_ensure_tables_rejects_unsafe_identifier():
     conn, _ = _conn_with_cursor()
     with pytest.raises(ValueError, match="Unsafe SQL identifier"):
         hana_writer.ensure_tables(conn, "AIFORCE2; DROP TABLE X")
+
+
+def test_read_helpers_validate_identifiers_independently():
+    conn, _ = _conn_with_cursor()
+    with pytest.raises(ValueError, match="Unsafe SQL identifier"):
+        hana_writer.read_watermarks(conn, "AIFORCE2; DROP TABLE X")
 
 
 def test_read_last_window_end_none_on_first_run():

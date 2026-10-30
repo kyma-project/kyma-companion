@@ -5,9 +5,8 @@ counted; we do not measure answer quality. The model returns a controlled area/i
 plus a short free-text capability, a human-readable topic label, and a one-sentence
 generic summary.
 
-``reasoning`` is requested to improve the classification but is never returned to the
-caller or persisted. The capability, topic label, and summary are additionally scrubbed
-downstream (``canonicalizer``) before anything is stored.
+The capability, topic label, and summary are additionally scrubbed downstream
+(``canonicalizer``) before anything is stored.
 """
 
 from __future__ import annotations
@@ -17,7 +16,7 @@ from typing import Any
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
 
-from conversation_segmentation.canonicalizer import CanonicalTopic, canonicalize
+from conversation_segmentation.canonicalizer import MAX_CAPABILITY_LEN, CanonicalTopic, canonicalize
 from conversation_segmentation.taxonomy import Area, Intent
 
 _AREA_VALUES = ", ".join(a.value for a in Area)
@@ -46,11 +45,10 @@ class TurnTopic(BaseModel):
 
     area: Area = Field(description="single best-fitting product area")
     intent: Intent = Field(description="what the user was trying to do")
-    capability: str = Field(description="short specific feature/sub-area, 1-3 words")
+    capability: str = Field(max_length=MAX_CAPABILITY_LEN, description="short specific feature/sub-area, 1-3 words")
     topic: str = Field(description="short human-readable topic label")
     summary: str = Field(description="one generic sentence; no identifiers or payloads")
     confidence: float = Field(ge=0, le=1, description="0-1 confidence in this classification")
-    reasoning: str = Field(default="", description="brief rationale (never persisted)")
 
 
 class Segmenter:
@@ -80,7 +78,7 @@ class Segmenter:
         self.tokens["total_tokens"] += int(usage.get("total_tokens", 0))
 
     async def segment_turn(self, query: str, response: str) -> CanonicalTopic:
-        """Classify one turn and return its canonical, privacy-safe topic assignment.
+        """Classify one turn and return its canonical, best-effort-scrubbed topic assignment.
 
         Raises on any LLM/parse error so the caller can count it as a failed turn.
         """

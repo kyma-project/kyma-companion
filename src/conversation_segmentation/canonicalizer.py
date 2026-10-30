@@ -1,5 +1,5 @@
 """Canonicalization: turn a model's per-turn proposal into a stable, groupable
-``topic_key`` and a privacy-safe example summary.
+``topic_key`` and a best-effort-scrubbed example summary.
 
 The ``topic_key`` is ``area/intent/capability-slug``. It is the aggregation key:
 two conversations that produce the same key count as two conversations on one topic,
@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from hashlib import sha256
 
 from conversation_segmentation.taxonomy import (
     GENERAL_CAPABILITY,
@@ -38,6 +39,9 @@ _SCRUB_PATTERNS: list[tuple[re.Pattern[str], str]] = [
 ]
 
 _MAX_SUMMARY_LEN = 200
+MAX_CAPABILITY_LEN = 128
+MAX_TOPIC_KEY_LEN = 256
+_HASH_SUFFIX_LEN = 16
 
 
 def slugify(text: str) -> str:
@@ -56,13 +60,21 @@ def _scrub_identifiers(text: str) -> str:
 
 def canonical_capability(raw_capability: str) -> str:
     """Scrub identifiers, then normalize a free-text capability to a stable slug;
-    placeholder when empty."""
-    return slugify(_scrub_identifiers(raw_capability)) or GENERAL_CAPABILITY
+    placeholder when empty and collision-resistant shortening when oversized."""
+    capability = slugify(_scrub_identifiers(raw_capability)) or GENERAL_CAPABILITY
+    if len(capability) <= MAX_CAPABILITY_LEN:
+        return capability
+    suffix = sha256(capability.encode("utf-8")).hexdigest()[:_HASH_SUFFIX_LEN]
+    prefix = capability[: MAX_CAPABILITY_LEN - _HASH_SUFFIX_LEN - 1].rstrip("-")
+    return f"{prefix}-{suffix}"
 
 
 def build_topic_key(area: Area, intent: Intent, capability_slug: str) -> str:
     """Compose the groupable aggregation key ``area/intent/capability``."""
-    return f"{area.value}/{intent.value}/{capability_slug}"
+    topic_key = f"{area.value}/{intent.value}/{capability_slug}"
+    if len(topic_key) > MAX_TOPIC_KEY_LEN:
+        raise ValueError("Canonical topic key exceeds its persistence limit")
+    return topic_key
 
 
 def sanitize_label(topic: str) -> str:
@@ -95,7 +107,7 @@ class CanonicalTopic:
 def canonicalize(
     *, area: Area, intent: Intent, capability: str, topic: str, summary: str, confidence: float
 ) -> CanonicalTopic:
-    """Reduce a model proposal to a canonical, privacy-safe topic assignment."""
+    """Reduce a model proposal to a canonical, best-effort-scrubbed topic assignment."""
     capability_slug = canonical_capability(capability)
     return CanonicalTopic(
         area=area,

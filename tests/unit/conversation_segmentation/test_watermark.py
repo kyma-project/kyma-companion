@@ -1,13 +1,9 @@
-import pytest
-
 from conversation_segmentation.watermark import (
     conversation_instance_key,
     head_fingerprint,
     select_new_turns,
     session_key,
 )
-
-pytestmark = pytest.mark.unit
 
 
 def test_session_key_is_stable_64_hex_and_not_the_raw_id():
@@ -39,6 +35,11 @@ def test_head_fingerprint_differs_for_different_first_query():
 
 def test_head_fingerprint_empty_string_for_no_turns():
     assert head_fingerprint([]) == ""
+
+
+def test_opaque_conversation_id_distinguishes_repeated_first_queries():
+    turns = [{"turn_index": 0, "query": "hello", "response": "hi"}]
+    assert head_fingerprint(turns, "a" * 64) != head_fingerprint(turns, "b" * 64)
 
 
 def test_conversation_instance_key_is_stable_and_separates_reused_sessions():

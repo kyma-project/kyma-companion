@@ -14,8 +14,8 @@ transaction, so a crash loses at most one batch and a re-run resumes from the co
 watermarks. ``write_run`` then finalizes the run in one transaction — inserting the run
 row and replacing the derived aggregate snapshot — so a partial snapshot is never visible.
 
-No raw conversation text, session id, or model reasoning is stored. Only a one-way
-conversation-instance hash, canonical labels, and sanitized example summaries are persisted.
+Complete raw conversation text, raw session IDs, and model reasoning are not directly stored.
+Only a one-way conversation-instance hash and best-effort-scrubbed derived text are persisted.
 """
 
 import datetime as dt
@@ -39,6 +39,11 @@ def _validate_identifier(name: str) -> str:
     if not _IDENTIFIER.match(name):
         raise ValueError(f"Unsafe SQL identifier: {name!r}")
     return name
+
+
+def _qualified_table(schema: str, table: str) -> str:
+    """Return a quoted table name after validating both interpolated identifiers."""
+    return f'"{_validate_identifier(schema)}"."{_validate_identifier(table)}"'
 
 
 _RUN_DDL_COLUMNS = (
@@ -140,7 +145,7 @@ def _create_or_validate(conn: Any, schema: str, table: str, columns: str, expect
         _validate_table_columns(conn, schema, table, expected)
         return
     with conn.cursor() as cur:
-        cur.execute(f'CREATE TABLE "{schema}"."{table}" ({columns})')
+        cur.execute(f"CREATE TABLE {_qualified_table(schema, table)} ({columns})")
     log.info("Created table %s.%s", schema, table)
 
 
@@ -159,7 +164,7 @@ def ensure_tables(conn: Any, schema: str) -> None:
 def read_last_window_end(conn: Any, schema: str) -> dt.datetime | None:
     """Return MAX(CREATED_AT) of the previous run, or None on the first run."""
     with conn.cursor() as cur:
-        cur.execute(f'SELECT MAX(CREATED_AT) FROM "{schema}"."{config.RUN_TABLE}"')
+        cur.execute(f"SELECT MAX(CREATED_AT) FROM {_qualified_table(schema, config.RUN_TABLE)}")
         row = cur.fetchone()
         return row[0] if row else None
 
@@ -167,7 +172,7 @@ def read_last_window_end(conn: Any, schema: str) -> dt.datetime | None:
 def validate_taxonomy_version(conn: Any, schema: str) -> None:
     """Fail before processing when persisted runs require an explicit taxonomy migration."""
     with conn.cursor() as cur:
-        cur.execute(f'SELECT DISTINCT TAXONOMY_VERSION FROM "{schema}"."{config.RUN_TABLE}"')
+        cur.execute(f"SELECT DISTINCT TAXONOMY_VERSION FROM {_qualified_table(schema, config.RUN_TABLE)}")
         versions = {str(row[0]) for row in cur.fetchall() if row[0] is not None}
     stale_versions = versions - {TAXONOMY_VERSION}
     if stale_versions:
@@ -180,7 +185,10 @@ def validate_taxonomy_version(conn: Any, schema: str) -> None:
 def read_watermarks(conn: Any, schema: str) -> dict[str, tuple[int, str]]:
     """Read all session watermarks (key → (turns_segmented, head_fingerprint))."""
     with conn.cursor() as cur:
-        cur.execute(f'SELECT SESSION_KEY, TURNS_SEGMENTED, HEAD_FINGERPRINT FROM "{schema}"."{config.WATERMARK_TABLE}"')
+        cur.execute(
+            f"SELECT SESSION_KEY, TURNS_SEGMENTED, HEAD_FINGERPRINT "
+            f"FROM {_qualified_table(schema, config.WATERMARK_TABLE)}"
+        )
         return {row[0]: (row[1], row[2] if row[2] is not None else "") for row in cur.fetchall()}
 
 
@@ -188,7 +196,7 @@ def read_assignments(conn: Any, schema: str) -> list[AssignmentState]:
     """Read all stored topic assignments so cumulative counts survive across runs."""
     sql = (
         "SELECT CONVERSATION_HASH, TOPIC_KEY, AREA, INTENT, CAPABILITY, TOPIC_LABEL, SUMMARY, "
-        f'CONFIDENCE, TURN_COUNT, TAXONOMY_VERSION FROM "{schema}"."{config.ASSIGNMENT_TABLE}"'
+        f"CONFIDENCE, TURN_COUNT, TAXONOMY_VERSION FROM {_qualified_table(schema, config.ASSIGNMENT_TABLE)}"
     )
     with conn.cursor() as cur:
         cur.execute(sql)
@@ -276,7 +284,7 @@ def _insert_run(cur: Any, schema: str, run_row: dict) -> None:
     cols = list(run_row.keys())
     placeholders = ", ".join("?" for _ in cols)
     cur.execute(
-        f'INSERT INTO "{schema}"."{config.RUN_TABLE}" ({", ".join(cols)}) VALUES ({placeholders})',
+        f"INSERT INTO {_qualified_table(schema, config.RUN_TABLE)} ({', '.join(cols)}) VALUES ({placeholders})",
         tuple(run_row[c] for c in cols),
     )
 
@@ -285,7 +293,7 @@ def _upsert_assignments(
     cur: Any, schema: str, assignments: list[AssignmentState], run_id: str, now: dt.datetime
 ) -> None:
     sql = (
-        f'UPSERT "{schema}"."{config.ASSIGNMENT_TABLE}" '
+        f"UPSERT {_qualified_table(schema, config.ASSIGNMENT_TABLE)} "
         "(CONVERSATION_HASH, TOPIC_KEY, AREA, INTENT, CAPABILITY, TOPIC_LABEL, SUMMARY, CONFIDENCE, "
         "TURN_COUNT, TAXONOMY_VERSION, RUN_ID, UPDATED_AT) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
         "WITH PRIMARY KEY"
@@ -315,9 +323,9 @@ def _upsert_assignments(
 
 def _replace_aggregate(cur: Any, schema: str, rows: list[dict], run_id: str, now: dt.datetime) -> None:
     """The aggregate is a cumulative snapshot: clear it, then insert fresh rows."""
-    cur.execute(f'DELETE FROM "{schema}"."{config.AGGREGATE_TABLE}"')
+    cur.execute(f"DELETE FROM {_qualified_table(schema, config.AGGREGATE_TABLE)}")
     sql = (
-        f'INSERT INTO "{schema}"."{config.AGGREGATE_TABLE}" '
+        f"INSERT INTO {_qualified_table(schema, config.AGGREGATE_TABLE)} "
         "(TOPIC_KEY, AREA, INTENT, CAPABILITY, TOPIC_LABEL, DISTINCT_CONVERSATION_COUNT, TURN_COUNT, "
         "EXAMPLE_SUMMARIES, TAXONOMY_VERSION, RUN_ID, COMPUTED_AT) "
         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
@@ -346,7 +354,7 @@ def _replace_aggregate(cur: Any, schema: str, rows: list[dict], run_id: str, now
 
 def _upsert_watermarks(cur: Any, schema: str, watermarks: dict[str, tuple[int, str]], now: dt.datetime) -> None:
     sql = (
-        f'UPSERT "{schema}"."{config.WATERMARK_TABLE}" '
+        f"UPSERT {_qualified_table(schema, config.WATERMARK_TABLE)} "
         "(SESSION_KEY, TURNS_SEGMENTED, HEAD_FINGERPRINT, UPDATED_AT) VALUES (?, ?, ?, ?) WITH PRIMARY KEY"
     )
     if watermarks:

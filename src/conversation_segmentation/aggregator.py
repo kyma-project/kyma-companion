@@ -84,7 +84,9 @@ class TopicTally:
             )
             return
         existing.turn_count += 1
-        if topic.confidence >= existing.confidence:  # keep the most-confident label/summary
+        current_rank = (existing.confidence, existing.label, existing.summary)
+        candidate_rank = (topic.confidence, topic.label, topic.summary)
+        if candidate_rank > current_rank:  # deterministic winner even when confidence ties
             existing.confidence = topic.confidence
             existing.label = topic.label
             existing.summary = topic.summary
@@ -113,8 +115,12 @@ class TopicTally:
 
         rows: list[dict] = []
         for topic_key, states in groups.items():
-            best = max(states, key=lambda s: s.confidence)
-            examples = [s.summary for s in sorted(states, key=lambda s: s.confidence, reverse=True) if s.summary]
+            best = max(states, key=lambda s: (s.confidence, s.label, s.summary, s.conversation_hash))
+            examples = [
+                state.summary
+                for state in sorted(states, key=lambda s: (-s.confidence, s.summary, s.conversation_hash))
+                if state.summary
+            ]
             rows.append(
                 {
                     "TOPIC_KEY": topic_key,
@@ -128,7 +134,7 @@ class TopicTally:
                     "TAXONOMY_VERSION": TAXONOMY_VERSION,
                 }
             )
-        rows.sort(key=lambda r: r["DISTINCT_CONVERSATION_COUNT"], reverse=True)
+        rows.sort(key=lambda r: (-r["DISTINCT_CONVERSATION_COUNT"], r["TOPIC_KEY"]))
         return rows
 
 

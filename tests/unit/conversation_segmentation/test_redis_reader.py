@@ -1,11 +1,10 @@
+import hashlib
 import json
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from conversation_segmentation.redis_reader import iter_conversations, pair_turns, parse_messages
-
-pytestmark = pytest.mark.unit
+from conversation_segmentation.redis_reader import iter_conversations, pair_turns, parse_messages, read_conversation_id
 
 
 async def _collect(agen):
@@ -31,6 +30,18 @@ def test_pair_turns_drops_unfinished_turn():
 
 def test_parse_messages_bad_json_returns_empty():
     assert parse_messages("{not json") == []
+
+
+@pytest.mark.asyncio
+async def test_read_conversation_id_accepts_only_opaque_64_hex():
+    conn = MagicMock()
+    conn.get = AsyncMock(side_effect=[b"a" * 64, "not-an-opaque-id", None])
+
+    assert await read_conversation_id(conn, "instance:", "s1") == "a" * 64
+    assert await read_conversation_id(conn, "instance:", "s2") == ""
+    assert await read_conversation_id(conn, "instance:", "s3") == ""
+    expected_key = f"instance:{hashlib.sha256(b's1').hexdigest()}"
+    assert conn.get.await_args_list[0].args == (expected_key,)
 
 
 def test_pair_turns_extracts_text_from_list_content_blocks():

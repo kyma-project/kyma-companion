@@ -6,8 +6,6 @@ from conversation_segmentation.aggregator import AssignmentState, TaxonomyVersio
 from conversation_segmentation.canonicalizer import canonicalize
 from conversation_segmentation.taxonomy import TAXONOMY_VERSION, Area, Intent
 
-pytestmark = pytest.mark.unit
-
 
 def _topic(area, intent, capability, topic="t", summary="s", confidence=0.9):
     return canonicalize(
@@ -108,6 +106,20 @@ def test_examples_are_deduped_and_capped():
     rows = tally.aggregate_rows()
     assert rows[0]["DISTINCT_CONVERSATION_COUNT"] == 5  # noqa: PLR2004
     assert len(rows[0]["EXAMPLE_SUMMARIES"]) == 2  # two distinct summaries, capped at 3  # noqa: PLR2004
+
+
+def test_tied_assignments_produce_deterministic_labels_and_examples():
+    assignments = [
+        AssignmentState("conv-b", "istio/troubleshooting/mtls", "istio", "troubleshooting", "mtls", "B", "z", 0.8, 1),
+        AssignmentState("conv-a", "istio/troubleshooting/mtls", "istio", "troubleshooting", "mtls", "A", "a", 0.8, 1),
+    ]
+    forward = TopicTally()
+    reverse = TopicTally()
+    forward.seed(assignments)
+    reverse.seed(list(reversed(assignments)))
+
+    assert forward.aggregate_rows() == reverse.aggregate_rows()
+    assert forward.aggregate_rows()[0]["EXAMPLE_SUMMARIES"] == ["a", "z"]
 
 
 def test_failures_count_toward_total_only():

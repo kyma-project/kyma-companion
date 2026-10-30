@@ -14,13 +14,15 @@ def conversation_instance_key(session_id: str, head_fingerprint: str) -> str:
     return hashlib.sha256(f"{session_id}\0{head_fingerprint}".encode()).hexdigest()
 
 
-def head_fingerprint(turns: list[dict]) -> str:
-    """SHA-256 of the first turn's query — a stable per-conversation-instance identity.
+def head_fingerprint(turns: list[dict], conversation_id: str = "") -> str:
+    """Return the stable opaque instance ID, falling back to the legacy query hash.
 
-    The first turn is append-only-stable within one conversation's life, so a
-    mismatch means the session id was reused for a new conversation (e.g. after
-    the old history expired). Empty string when there are no complete turns.
+    New Redis records receive a random 64-hex ID when first saved. That ID changes when
+    an expired session key is recreated, even if its first query repeats. Legacy message
+    arrays retain the former first-query fingerprint until their next application write.
     """
+    if conversation_id:
+        return conversation_id
     if not turns:
         return ""
     return hashlib.sha256(turns[0].get("query", "").encode("utf-8")).hexdigest()

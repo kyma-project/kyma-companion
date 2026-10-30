@@ -1,18 +1,22 @@
 """Read Companion conversations from Redis and pair them into (query, response) turns.
 
 Values are single JSON-string keys `kyma_agent_conversation:{session_id}` holding a
-list of serialized messages (keys: type, content, tool_calls). We SCAN (never KEYS)
+list of serialized messages (keys: type, content, tool_calls). A separate metadata key
+holds the opaque conversation-instance ID. We SCAN (never KEYS)
 so we don't block Redis. Pairing mirrors the PoC: a ReAct turn is
 human -> ai(tool_calls)* -> ai(final answer); we pair the human with the finalizer.
 """
 
 import json
 import logging
+import re
 from collections.abc import AsyncIterator
+from hashlib import sha256
 
 from redis.asyncio import Redis
 
 log = logging.getLogger(__name__)
+_OPAQUE_ID = re.compile(r"^[0-9a-f]{64}$")
 
 
 def _extract_text(content: str | list | None) -> str:
@@ -26,11 +30,20 @@ def _extract_text(content: str | list | None) -> str:
 def parse_messages(raw_json: str) -> list[dict]:
     """Parse the stored JSON message array; [] on malformed input."""
     try:
-        msgs = json.loads(raw_json)
+        messages = json.loads(raw_json)
     except (json.JSONDecodeError, TypeError):
         log.warning("Malformed conversation JSON; skipping")
         return []
-    return msgs if isinstance(msgs, list) else []
+    return messages if isinstance(messages, list) else []
+
+
+async def read_conversation_id(conn: Redis, prefix: str, session_id: str) -> str:
+    """Read and validate the optional opaque instance ID for one conversation."""
+    session_hash = sha256(session_id.encode("utf-8")).hexdigest()
+    raw = await conn.get(f"{prefix}{session_hash}")
+    if isinstance(raw, bytes):
+        raw = raw.decode()
+    return raw if isinstance(raw, str) and _OPAQUE_ID.fullmatch(raw) else ""
 
 
 def pair_turns(msgs: list[dict]) -> list[dict]:

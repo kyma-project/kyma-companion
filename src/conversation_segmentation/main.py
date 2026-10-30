@@ -5,7 +5,8 @@ Run in the Companion image as:  python3.14 -m conversation_segmentation.main seg
 Reads Companion conversations from Redis, classifies only-new turns into dynamic Kyma
 topics, and persists durable per-conversation topic assignments plus a cumulative
 aggregate snapshot to HANA. The primary output is the distinct-conversation count per
-topic. No raw conversation text, session id, or model reasoning is persisted.
+topic. Complete raw conversation text, raw session IDs, and model reasoning are not
+directly persisted; derived free-text fields receive best-effort scrubbing.
 """
 
 import argparse
@@ -27,7 +28,7 @@ from conversation_segmentation.hana_writer import (
     write_batch,
     write_run,
 )
-from conversation_segmentation.redis_reader import iter_conversations, pair_turns, parse_messages
+from conversation_segmentation.redis_reader import iter_conversations, pair_turns, parse_messages, read_conversation_id
 from conversation_segmentation.segmenter import Segmenter
 from conversation_segmentation.taxonomy import TAXONOMY_VERSION
 from conversation_segmentation.watermark import (
@@ -54,6 +55,10 @@ _NOISY_PAYLOAD_LOGGERS = (
     "redis",
     "hdbcli",
 )
+
+
+class ClassificationFailuresError(RuntimeError):
+    """The completed run retained retryable classification failures."""
 
 
 def _enforce_log_privacy() -> None:
@@ -104,7 +109,8 @@ async def run_segmentation(
         conversation_number += 1
         turns = pair_turns(parse_messages(raw_json))
         watermark_key = session_key(session_id)
-        cur_fp = head_fingerprint(turns)
+        conversation_id = await read_conversation_id(redis_conn, config.CONVERSATION_INSTANCE_KEY_PREFIX, session_id)
+        cur_fp = head_fingerprint(turns, conversation_id)
         conversation_hash = conversation_instance_key(session_id, cur_fp)
         prior_count, prior_fp = prior.get(watermark_key, (0, ""))
         already = prior_count if cur_fp == prior_fp else 0
@@ -169,7 +175,7 @@ async def _classify_new_turns(
     for turn in turns:
         failed = False
         try:
-            topic = await segmenter.segment_turn(turn["query"], turn["response"])
+            topic = await _segment_turn_with_retry(segmenter, turn)
             tally.add_turn(conversation_hash, topic)
             watermark_count += 1
         except Exception as exc:
@@ -188,6 +194,25 @@ async def _classify_new_turns(
         if failed:
             break
     return watermark_count, processed_turns
+
+
+async def _segment_turn_with_retry(segmenter: Any, turn: dict) -> Any:
+    """Classify one turn with bounded exponential backoff and privacy-safe logging."""
+    for attempt in range(1, config.CLASSIFICATION_MAX_ATTEMPTS + 1):
+        try:
+            return await segmenter.segment_turn(turn["query"], turn["response"])
+        except Exception as exc:
+            if attempt == config.CLASSIFICATION_MAX_ATTEMPTS:
+                raise
+            log.warning(
+                "Topic analysis attempt %d/%d failed (%s); retrying",
+                attempt,
+                config.CLASSIFICATION_MAX_ATTEMPTS,
+                type(exc).__name__,
+            )
+            delay = config.CLASSIFICATION_RETRY_BASE_SECONDS * (2 ** (attempt - 1))
+            await asyncio.sleep(delay)
+    raise AssertionError("classification retry loop exhausted without returning or raising")
 
 
 def _flush_batch(
@@ -227,6 +252,13 @@ def _build_run_row(
     }
 
 
+def _raise_for_failed_run(run_row: dict[str, Any]) -> None:
+    """Return a failing Job status after checkpoints and the failed run row are durable."""
+    failed_turns = int(run_row["FAILED_TURNS"])
+    if failed_turns:
+        raise ClassificationFailuresError(f"{failed_turns} turn classification(s) remain retryable")
+
+
 async def _segment_task() -> None:
     # Local imports: these pull in the app settings (loads config.json → env).
     from services.hana import get_hana  # noqa: PLC0415
@@ -245,16 +277,19 @@ async def _segment_task() -> None:
     redis_conn = get_redis().get_connection()
     hana_conn = get_hana().get_connction()  # misspelling is in the app API
     try:
-        await run_segmentation(
+        run_row = await run_segmentation(
             redis_conn=redis_conn,
             hana_conn=hana_conn,
             segmenter=segmenter,
             schema=str(DATABASE_USER),
             now=dt.datetime.now(dt.UTC).replace(tzinfo=None),
         )
+        _raise_for_failed_run(run_row)
     finally:
         with contextlib.suppress(Exception):
             await redis_conn.aclose()
+        with contextlib.suppress(Exception):
+            hana_conn.close()
 
 
 def main() -> None:

@@ -94,6 +94,10 @@ auth_part = f"{user_part}:{REDIS_PASSWORD}@" if REDIS_USER or REDIS_PASSWORD els
 REDIS_URL = f"redis://{auth_part}{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB_NUMBER}"
 REDIS_TTL = config("REDIS_TTL", default=43200, cast=int)  # Default 12 Hours
 KYMA_AGENT_CONVERSATION_TTL = config("KYMA_AGENT_CONVERSATION_TTL", default=604800, cast=int)  # Default 7 Days
+KYMA_AGENT_CONVERSATION_PREFIX = config("KYMA_AGENT_CONVERSATION_PREFIX", default="kyma_agent_conversation:")
+KYMA_AGENT_CONVERSATION_INSTANCE_PREFIX = config(
+    "KYMA_AGENT_CONVERSATION_INSTANCE_PREFIX", default="kyma_agent_conversation_instance:"
+)
 REDIS_SSL_ENABLED = config("REDIS_SSL_ENABLED", default=False)
 
 # RAG

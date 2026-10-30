@@ -6,11 +6,15 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from conversation_segmentation import watermark
+from conversation_segmentation.aggregator import AssignmentState
 from conversation_segmentation.canonicalizer import canonicalize
-from conversation_segmentation.main import _enforce_log_privacy, run_segmentation
+from conversation_segmentation.main import (
+    ClassificationFailuresError,
+    _enforce_log_privacy,
+    _raise_for_failed_run,
+    run_segmentation,
+)
 from conversation_segmentation.taxonomy import Area, Intent
-
-pytestmark = pytest.mark.unit
 
 
 def test_enforce_log_privacy_pins_root_and_silences_payload_loggers():
@@ -56,6 +60,12 @@ def _redis_with(convo):
 
     rconn.scan_iter = _iter
     rconn.get = AsyncMock(return_value=convo)
+    return rconn
+
+
+def _redis_with_instance(conversation_id, messages):
+    rconn = _redis_with(json.dumps(messages))
+    rconn.get = AsyncMock(side_effect=[json.dumps(messages), conversation_id])
     return rconn
 
 
@@ -116,6 +126,7 @@ async def test_only_new_turns_analyzed_and_snapshot_written(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_skip_and_count_failure_path(monkeypatch):
+    monkeypatch.setattr("conversation_segmentation.main.config.CLASSIFICATION_MAX_ATTEMPTS", 1)
     captured = _patch_io(monkeypatch, watermarks={})
     seg = MagicMock()
     seg.segment_turn = AsyncMock(side_effect=[_topic(), RuntimeError("llm down")])
@@ -210,6 +221,44 @@ async def test_stale_fingerprint_reanalyzes_all_turns(monkeypatch):
     assert captured["watermarks"][key] == (2, watermark.head_fingerprint(turns_real))
 
 
+@pytest.mark.asyncio
+async def test_reused_session_with_same_first_query_uses_new_instance_id(monkeypatch):
+    old_id = "a" * 64
+    new_id = "b" * 64
+    old_assignment = AssignmentState(
+        conversation_hash=watermark.conversation_instance_key("s1", old_id),
+        topic_key="istio/troubleshooting/mtls",
+        area="istio",
+        intent="troubleshooting",
+        capability="mtls",
+        label="mTLS",
+        summary="s",
+        confidence=0.9,
+        turn_count=2,
+    )
+    captured = _patch_io(
+        monkeypatch,
+        watermarks={watermark.session_key("s1"): (2, old_id)},
+        assignments=[old_assignment],
+    )
+    messages = [{"type": "human", "content": "same query"}, {"type": "ai", "content": "new answer"}]
+    seg = MagicMock()
+    seg.segment_turn = AsyncMock(return_value=_topic())
+    seg.tokens = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+
+    await run_segmentation(
+        redis_conn=_redis_with_instance(new_id, messages),
+        hana_conn=_hana(),
+        segmenter=seg,
+        schema="AIFORCE2",
+        now=dt.datetime(2026, 9, 10),
+    )
+
+    seg.segment_turn.assert_awaited_once()
+    assert captured["watermarks"][watermark.session_key("s1")] == (1, new_id)
+    assert captured["aggregate_rows"][0]["DISTINCT_CONVERSATION_COUNT"] == 2  # noqa: PLR2004
+
+
 def test_reused_session_id_has_a_distinct_assignment_identity():
     old_fp = watermark.head_fingerprint([{"query": "old", "response": "answer"}])
     new_fp = watermark.head_fingerprint([{"query": "new", "response": "answer"}])
@@ -221,6 +270,7 @@ def test_reused_session_id_has_a_distinct_assignment_identity():
 async def test_failure_logging_omits_exception_content(monkeypatch, caplog):
     """A failed turn must log only the exception type, never its (content-derived) message."""
     _patch_io(monkeypatch, watermarks={})
+    monkeypatch.setattr("conversation_segmentation.main.config.CLASSIFICATION_MAX_ATTEMPTS", 1)
     seg = MagicMock()
     secret = "user said: my token is abcSECRET in namespace prod-9"
     seg.segment_turn = AsyncMock(side_effect=ValueError(secret))
@@ -236,6 +286,36 @@ async def test_failure_logging_omits_exception_content(monkeypatch, caplog):
         )
     assert "ValueError" in caplog.text  # type is logged
     assert secret not in caplog.text  # content is not
+
+
+@pytest.mark.asyncio
+async def test_classification_retries_with_backoff_then_succeeds(monkeypatch):
+    monkeypatch.setattr("conversation_segmentation.main.config.CLASSIFICATION_MAX_ATTEMPTS", 3)
+    monkeypatch.setattr("conversation_segmentation.main.config.CLASSIFICATION_RETRY_BASE_SECONDS", 0)
+    sleep = AsyncMock()
+    monkeypatch.setattr("conversation_segmentation.main.asyncio.sleep", sleep)
+    captured = _patch_io(monkeypatch, watermarks={})
+    seg = MagicMock()
+    seg.segment_turn = AsyncMock(side_effect=[RuntimeError("provider down"), _topic(), _topic()])
+    seg.tokens = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+
+    row = await run_segmentation(
+        redis_conn=_redis_with(_two_turn_convo()),
+        hana_conn=_hana(),
+        segmenter=seg,
+        schema="AIFORCE2",
+        now=dt.datetime(2026, 9, 10),
+    )
+
+    assert row["FAILED_TURNS"] == 0
+    assert seg.segment_turn.await_count == 3  # noqa: PLR2004  # first turn retried, second succeeds immediately
+    sleep.assert_awaited_once_with(0)
+    assert captured["watermarks"][watermark.session_key("s1")][0] == 2  # noqa: PLR2004
+
+
+def test_failed_completed_run_raises_for_nonzero_job_status():
+    with pytest.raises(ClassificationFailuresError, match="2 turn classification"):
+        _raise_for_failed_run({"FAILED_TURNS": 2})
 
 
 def _redis_with_many(count):
