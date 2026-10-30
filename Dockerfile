@@ -428,7 +428,9 @@ RUN set -eu \
 # Starts from an empty filesystem; the single COPY makes /rootfs the whole
 # image. Nothing from the builder stage is inherited.
 FROM scratch
+ARG IMAGE_REVISION="unknown"
 COPY --from=rootfs /rootfs /
+LABEL org.opencontainers.image.revision="${IMAGE_REVISION}"
 
 # PATH has only the venv and the interpreter; there is no /usr/bin.
 # SSL_CERT_FILE names the CA bundle explicitly for libraries that read the

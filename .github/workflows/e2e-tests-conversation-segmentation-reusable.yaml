@@ -1,0 +1,307 @@
+name: "E2E Tests for Conversation Segmentation (reusable)"
+
+on:
+  workflow_call:
+    inputs:
+      IMAGE_TAG:
+        required: true
+        type: string
+        description: "Trusted PR image tag; resolved to a digest before execution"
+      EXPECTED_COMMIT_SHA:
+        required: true
+        type: string
+        description: "Full PR commit SHA whose build check completed"
+      EXPECTED_PR_NUMBER:
+        required: true
+        type: string
+        description: "PR number used to validate the image tag"
+      TEST_REPO_FULLNAME:
+        required: true
+        type: string
+        description: "Repository containing the reviewed E2E fixtures"
+      TEST_REF:
+        required: true
+        type: string
+        description: "Immutable full SHA containing the reviewed E2E fixtures"
+      TABLE_PREFIX:
+        required: true
+        type: string
+        description: "Unique prefix for the four temporary HANA tables"
+    secrets:
+      # These declarations make the names explicit for reusable-workflow validation.
+      # Callers do not pass them: each called job receives only the secrets of its
+      # own GitHub environment.
+      SEGMENTATION_E2E_MODEL_CONFIG:
+        required: false
+      SEGMENTATION_E2E_HANA_CONFIG:
+        required: false
+      SEGMENTATION_E2E_HANA_CLEANUP_CONFIG:
+        required: false
+
+permissions:
+  contents: read
+  pull-requests: read
+
+env:
+  KUBECTL_VERSION: "v1.31.14"
+  KUBECTL_SHA256: "8791ec7c8966b61420d55103a5fb948de9f0ca3d7306d789734975ad9704bdb0"
+  K3D_VERSION: "v5.8.3"
+  K3D_SHA256: "dbaa79a76ace7f4ca230a1ff41dc7d8a5036a8ad0309e9c54f9bf3836dbe853e"
+  HELM_VERSION: "v3.17.1"
+  HELM_SHA256: "3b66f3cd28409f29832b1b35b43d9922959a32d795003149707fea84cbcd4469"
+  REDIS_CHART_VERSION: "0.4.21"
+  REDIS_CHART_SHA256: "9c16f47177e69018a58da51c49cbe4e04ade6f6e4d3f66fb7e68799fb599af05"
+  K3D_CLUSTER: "segmentation-e2e"
+  K3D_CONTEXT: "k3d-segmentation-e2e"
+  NAMESPACE: "segmentation-e2e"
+
+jobs:
+  e2e-tests:
+    name: Run conversation segmentation E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: e2e
+    env:
+      EXPECTED_K3D_CONTEXT: "k3d-segmentation-e2e"
+      CI_HELPER: ${{ github.workspace }}/trusted-ci/scripts/python/conversation_segmentation_e2e_ci.py
+    steps:
+      # Bootstrap limitation: this reusable workflow is loaded from @main. The first
+      # merge cannot execute itself; later PRs execute trusted orchestration from main
+      # while fixtures/manifests below are checked out at the exact reviewed SHA.
+      - name: Checkout trusted CI orchestration
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: kyma-project/kyma-companion
+          ref: main
+          path: trusted-ci
+
+      - name: Checkout gated E2E fixtures
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: ${{ inputs.TEST_REPO_FULLNAME }}
+          ref: ${{ inputs.TEST_REF }}
+          path: pr-source
+          # The e2e environment requires codeowner approval before fork code or
+          # credentials are available. The PR image intentionally receives only the
+          # allowlisted model/HANA config built below after that approval.
+          allow-unsafe-pr-checkout: true
+
+      - name: Install pinned Kubernetes tools
+        run: |
+          set -euo pipefail
+          curl -fsSLo "${RUNNER_TEMP}/kubectl" \
+            "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+          echo "${KUBECTL_SHA256}  ${RUNNER_TEMP}/kubectl" | sha256sum --check
+          sudo install -m 0755 "${RUNNER_TEMP}/kubectl" /usr/local/bin/kubectl
+
+          curl -fsSLo "${RUNNER_TEMP}/k3d" \
+            "https://github.com/k3d-io/k3d/releases/download/${K3D_VERSION}/k3d-linux-amd64"
+          echo "${K3D_SHA256}  ${RUNNER_TEMP}/k3d" | sha256sum --check
+          sudo install -m 0755 "${RUNNER_TEMP}/k3d" /usr/local/bin/k3d
+
+          curl -fsSLo "${RUNNER_TEMP}/helm.tgz" \
+            "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz"
+          echo "${HELM_SHA256}  ${RUNNER_TEMP}/helm.tgz" | sha256sum --check
+          tar -xzf "${RUNNER_TEMP}/helm.tgz" -C "${RUNNER_TEMP}"
+          sudo install -m 0755 "${RUNNER_TEMP}/linux-amd64/helm" /usr/local/bin/helm
+
+      - name: Initialize isolated kubeconfig path
+        run: |
+          # Never inherit a runner or developer kube context. K3d is the only writer.
+          kubeconfig="${RUNNER_TEMP}/segmentation-e2e-kubeconfig.yaml"
+          rm -f "$kubeconfig"
+          echo "KUBECONFIG=$kubeconfig" >> "$GITHUB_ENV"
+
+      - name: Create isolated K3d kubeconfig and cluster
+        run: |
+          set -euo pipefail
+          rm -f "$KUBECONFIG"
+          k3d cluster create "${K3D_CLUSTER}" --agents=1 \
+            --kubeconfig-update-default=false \
+            --kubeconfig-switch-context=false
+          k3d kubeconfig get "${K3D_CLUSTER}" > "$KUBECONFIG"
+          chmod 0600 "$KUBECONFIG"
+
+      - name: Verify isolated K3d endpoint
+        run: |
+          context_name="$(kubectl config current-context)"
+          api_server="$(kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}')"
+          if [[ "$context_name" != "${K3D_CONTEXT}" ]] || \
+            [[ ! "$api_server" =~ ^https://(0\.0\.0\.0|127\.0\.0\.1|localhost):[0-9]+$ ]]; then
+            echo "context_guard=failed expected_contexts=1 matching_contexts=0"
+            exit 1
+          fi
+          echo "context_guard=passed expected_contexts=1 matching_contexts=1"
+
+      - name: Create namespaces
+        run: |
+          kubectl create namespace "${NAMESPACE}"
+          kubectl create namespace redis
+
+      - name: Deploy checksum-pinned isolated Redis
+        run: |
+          chart="${RUNNER_TEMP}/redis-stack-server-${REDIS_CHART_VERSION}.tgz"
+          curl -fsSLo "$chart" \
+            "https://github.com/redis-stack/helm-redis-stack/releases/download/redis-stack-server-${REDIS_CHART_VERSION}/redis-stack-server-${REDIS_CHART_VERSION}.tgz"
+          echo "${REDIS_CHART_SHA256}  ${chart}" | sha256sum --check
+          helm install --wait --timeout 5m redis-stack "$chart" \
+            --set auth.enabled=false \
+            --namespace redis
+
+      - name: Create allowlisted runtime configuration Secret
+        env:
+          SEGMENTATION_E2E_MODEL_CONFIG: ${{ secrets.SEGMENTATION_E2E_MODEL_CONFIG }}
+          SEGMENTATION_E2E_HANA_CONFIG: ${{ secrets.SEGMENTATION_E2E_HANA_CONFIG }}
+          TABLE_PREFIX: ${{ inputs.TABLE_PREFIX }}
+        run: |
+          set -euo pipefail
+          umask 077
+          model_config="$(mktemp)"
+          hana_config="$(mktemp)"
+          runtime_config="$(mktemp)"
+          trap 'rm -f "$model_config" "$hana_config" "$runtime_config"' EXIT
+          printf '%s' "$SEGMENTATION_E2E_MODEL_CONFIG" > "$model_config"
+          printf '%s' "$SEGMENTATION_E2E_HANA_CONFIG" > "$hana_config"
+          python3 "$CI_HELPER" build-config \
+            --model-config "$model_config" \
+            --hana-config "$hana_config" \
+            --table-prefix "$TABLE_PREFIX" \
+            --output "$runtime_config"
+          kubectl create secret generic segmentation-e2e-config \
+            --namespace "${NAMESPACE}" \
+            --from-file=config.json="$runtime_config" \
+            --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+
+      - name: Create E2E helper ConfigMap
+        run: |
+          kubectl create configmap segmentation-e2e-helper \
+            --namespace "${NAMESPACE}" \
+            --from-file=segmentation_e2e.py=pr-source/tests/e2e/conversation_segmentation/segmentation_e2e.py
+
+      - name: Resolve PR image to immutable digest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IMAGE_TAG: ${{ inputs.IMAGE_TAG }}
+          EXPECTED_COMMIT_SHA: ${{ inputs.EXPECTED_COMMIT_SHA }}
+          EXPECTED_PR_NUMBER: ${{ inputs.EXPECTED_PR_NUMBER }}
+        run: |
+          set -euo pipefail
+          expected_tag="europe-docker.pkg.dev/kyma-project/dev/kyma-companion:PR-${EXPECTED_PR_NUMBER}"
+          [[ "$IMAGE_TAG" == "$expected_tag" ]]
+          [[ "$EXPECTED_COMMIT_SHA" =~ ^[0-9a-f]{40}$ ]]
+          current_head="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${EXPECTED_PR_NUMBER}" --jq .head.sha)"
+          [[ "$current_head" == "$EXPECTED_COMMIT_SHA" ]]
+          docker pull --platform linux/amd64 "$IMAGE_TAG" >/dev/null
+          pinned_image="$(docker image inspect --format '{{index .RepoDigests 0}}' "$IMAGE_TAG")"
+          [[ "$pinned_image" =~ ^europe-docker\.pkg\.dev/kyma-project/dev/kyma-companion@sha256:[0-9a-f]{64}$ ]]
+          revision="$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$IMAGE_TAG")"
+          [[ "$revision" == "$EXPECTED_COMMIT_SHA" ]]
+          echo "image_commit_linkage=verified revision_labels=1"
+          echo "IMAGE_NAME=$pinned_image" >> "$GITHUB_ENV"
+          k3d image import "$pinned_image" --cluster "${K3D_CLUSTER}" >/dev/null
+
+      - name: Seed synthetic conversations
+        env:
+          HELPER_ACTION: seed
+          EXPECTED_RUNS: "0"
+        run: |
+          trusted-ci/scripts/shell/run-segmentation-e2e-job.sh \
+            "${NAMESPACE}" pr-source/tests/e2e/conversation_segmentation/helper-job.yaml \
+            segmentation-e2e-seed-0 120 seed
+
+      - name: Run initial segmentation
+        run: |
+          trusted-ci/scripts/shell/run-segmentation-e2e-job.sh \
+            "${NAMESPACE}" pr-source/tests/e2e/conversation_segmentation/segment-job.yaml \
+            segmentation-e2e-segment 420 segment-initial
+
+      - name: Validate initial run
+        env:
+          HELPER_ACTION: validate
+          EXPECTED_RUNS: "1"
+        run: |
+          trusted-ci/scripts/shell/run-segmentation-e2e-job.sh \
+            "${NAMESPACE}" pr-source/tests/e2e/conversation_segmentation/helper-job.yaml \
+            segmentation-e2e-validate-1 120 validate-1
+
+      - name: Append one complete synthetic turn
+        env:
+          HELPER_ACTION: append
+          EXPECTED_RUNS: "0"
+        run: |
+          trusted-ci/scripts/shell/run-segmentation-e2e-job.sh \
+            "${NAMESPACE}" pr-source/tests/e2e/conversation_segmentation/helper-job.yaml \
+            segmentation-e2e-append-0 120 append
+
+      - name: Run incremental segmentation
+        run: |
+          kubectl delete job segmentation-e2e-segment -n "${NAMESPACE}" --wait=true >/dev/null
+          trusted-ci/scripts/shell/run-segmentation-e2e-job.sh \
+            "${NAMESPACE}" pr-source/tests/e2e/conversation_segmentation/segment-job.yaml \
+            segmentation-e2e-segment 240 segment-incremental
+
+      - name: Validate exactly one incremental turn
+        env:
+          HELPER_ACTION: validate
+          EXPECTED_RUNS: "2"
+        run: |
+          trusted-ci/scripts/shell/run-segmentation-e2e-job.sh \
+            "${NAMESPACE}" pr-source/tests/e2e/conversation_segmentation/helper-job.yaml \
+            segmentation-e2e-validate-2 120 validate-2
+
+      - name: Run no-op segmentation
+        run: |
+          kubectl delete job segmentation-e2e-segment -n "${NAMESPACE}" --wait=true >/dev/null
+          trusted-ci/scripts/shell/run-segmentation-e2e-job.sh \
+            "${NAMESPACE}" pr-source/tests/e2e/conversation_segmentation/segment-job.yaml \
+            segmentation-e2e-segment 120 segment-noop
+
+      - name: Validate idempotent no-op run
+        env:
+          HELPER_ACTION: validate
+          EXPECTED_RUNS: "3"
+        run: |
+          trusted-ci/scripts/shell/run-segmentation-e2e-job.sh \
+            "${NAMESPACE}" pr-source/tests/e2e/conversation_segmentation/helper-job.yaml \
+            segmentation-e2e-validate-3 120 validate-3
+
+  cleanup:
+    name: Drop temporary segmentation HANA tables
+    needs: e2e-tests
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # This environment must have no required reviewers so cleanup starts
+    # automatically. It contains only SEGMENTATION_E2E_HANA_CLEANUP_CONFIG.
+    environment: segmentation-e2e-cleanup
+    steps:
+      # Independent of the PR checkout, PR image, K3d, and segmentation helper.
+      - name: Checkout trusted cleanup utility
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: kyma-project/kyma-companion
+          ref: main
+
+      - name: Setup Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: "3.14"
+
+      - name: Install pinned HANA client
+        run: |
+          python -m pip install --disable-pip-version-check --require-hashes \
+            -r scripts/requirements/conversation-segmentation-e2e-cleanup.txt
+
+      - name: Drop all four run-scoped tables
+        env:
+          SEGMENTATION_E2E_HANA_CLEANUP_CONFIG: ${{ secrets.SEGMENTATION_E2E_HANA_CLEANUP_CONFIG }}
+          TABLE_PREFIX: ${{ inputs.TABLE_PREFIX }}
+        run: |
+          set -euo pipefail
+          umask 077
+          cleanup_config="$(mktemp)"
+          trap 'rm -f "$cleanup_config"' EXIT
+          printf '%s' "$SEGMENTATION_E2E_HANA_CLEANUP_CONFIG" > "$cleanup_config"
+          python scripts/python/conversation_segmentation_e2e_ci.py drop-tables \
+            --cleanup-config "$cleanup_config" \
+            --table-prefix "$TABLE_PREFIX"

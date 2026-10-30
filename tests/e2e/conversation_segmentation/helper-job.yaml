@@ -1,0 +1,37 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: segmentation-e2e-${HELPER_ACTION}-${EXPECTED_RUNS}
+  namespace: segmentation-e2e
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 300
+  template:
+    spec:
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      containers:
+        - name: helper
+          image: ${IMAGE_NAME}
+          imagePullPolicy: Never
+          command: ["python3.14", "/e2e/segmentation_e2e.py", "${HELPER_ACTION}"]
+          args: ["--expected-runs", "${EXPECTED_RUNS}"]
+          env:
+            - name: CONFIG_PATH
+              value: /etc/segmentation/config.json
+          volumeMounts:
+            - name: config
+              mountPath: /etc/segmentation/config.json
+              subPath: config.json
+              readOnly: true
+            - name: helper
+              mountPath: /e2e/segmentation_e2e.py
+              subPath: segmentation_e2e.py
+              readOnly: true
+      volumes:
+        - name: config
+          secret:
+            secretName: segmentation-e2e-config
+        - name: helper
+          configMap:
+            name: segmentation-e2e-helper

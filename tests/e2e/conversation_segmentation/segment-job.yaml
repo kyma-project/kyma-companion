@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: segmentation-e2e-segment
+  namespace: segmentation-e2e
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 420
+  template:
+    spec:
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      containers:
+        - name: segmentation
+          image: ${IMAGE_NAME}
+          imagePullPolicy: Never
+          command: ["python3.14", "-m", "conversation_segmentation.main", "segment"]
+          env:
+            - name: CONFIG_PATH
+              value: /etc/segmentation/config.json
+          volumeMounts:
+            - name: config
+              mountPath: /etc/segmentation/config.json
+              subPath: config.json
+              readOnly: true
+      volumes:
+        - name: config
+          secret:
+            secretName: segmentation-e2e-config
