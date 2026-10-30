@@ -90,7 +90,6 @@ The persistence protocol does not provide a database lease, so overlapping write
 
 Transcript payloads are fetched one at a time, so they are not all resident simultaneously; peak transcript memory still
 scales with the largest conversation. The Redis session-ID list and all retained HANA watermarks and assignments are
-Companion volumes; substantially larger histories require batched state reads and database-side aggregation.
 
 ## Code map
 
