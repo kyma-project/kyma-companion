@@ -36,6 +36,11 @@ to a temporary file, checked for normalized privacy canaries by trusted code, an
 messages before anything is emitted. Log retrieval is mandatory, and each seed/append/segment/validate action must emit
 its expected safe completion marker.
 
+Fixture seeding and appending use the production conversation-history helpers rather than writing Redis values directly.
+This exercises the atomic Lua write for list-valued history plus hashed instance-metadata keys. HANA validation reads those
+opaque instance IDs back from Redis and verifies both assignment hashes and processing checkpoints against them. Seed setup
+also uses an isolated synthetic key to verify stable IDs and malformed-history repair, then deletes that key in `finally`.
+
 The shared image builder publishes a mutable `PR-<number>` tag. The caller waits for the exact head SHA's trusted build
 check, rechecks that the PR head is unchanged, pulls the tag once, and uses the resolved registry digest for every Job.
 The pull-image build workflow must pass `IMAGE_REVISION=<full head SHA>`; the Dockerfile writes it as the OCI

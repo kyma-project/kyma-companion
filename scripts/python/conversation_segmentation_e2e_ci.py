@@ -173,6 +173,8 @@ def build_minimal_config(model_path: Path, hana_path: Path, table_prefix: str) -
             "REDIS_USER": "",
             "REDIS_PASSWORD": "",
             "REDIS_DB_NUMBER": 0,
+            "KYMA_AGENT_CONVERSATION_PREFIX": "kyma_agent_conversation:",
+            "KYMA_AGENT_CONVERSATION_INSTANCE_PREFIX": "kyma_agent_conversation_instance:",
             "LOG_LEVEL": "INFO",
             "LOG_FORMAT": "json",
             "LLM_REQUEST_TIMEOUT_SECONDS": 60,
@@ -183,6 +185,8 @@ def build_minimal_config(model_path: Path, hana_path: Path, table_prefix: str) -
             "SEGMENTATION_MAX_CONVERSATIONS": 2,
             "SEGMENTATION_PROGRESS_LOG_INTERVAL": 1,
             "SEGMENTATION_BATCH_SIZE": 2,
+            "SEGMENTATION_CLASSIFICATION_MAX_ATTEMPTS": 3,
+            "SEGMENTATION_CLASSIFICATION_RETRY_BASE_SECONDS": 1,
         }
     )
     return config

@@ -24,6 +24,7 @@ EXPECTED_THIRD_RUNS = 3
 
 _SESSION_ALPHA = "seg-e2e-session-alpha"
 _SESSION_BETA = "seg-e2e-session-beta"
+_IDENTITY_SMOKE_SESSION = "seg-e2e-identity-smoke"
 _CONVERSATIONS: dict[str, list[dict[str, Any]]] = {
     _SESSION_ALPHA: [
         {
@@ -119,13 +120,8 @@ def _session_hash(session_id: str) -> str:
     return hashlib.sha256(session_id.encode()).hexdigest()
 
 
-def _head_fingerprint(session_id: str) -> str:
-    first_query = next(message["content"] for message in _CONVERSATIONS[session_id] if message["type"] == "human")
-    return hashlib.sha256(first_query.encode()).hexdigest()
-
-
-def _conversation_hash(session_id: str) -> str:
-    return hashlib.sha256(f"{session_id}\0{_head_fingerprint(session_id)}".encode()).hexdigest()
+def _conversation_hash(session_id: str, conversation_id: str) -> str:
+    return hashlib.sha256(f"{session_id}\0{conversation_id}".encode()).hexdigest()
 
 
 def _table_names() -> tuple[str, str, str, str]:
@@ -163,26 +159,38 @@ def _query(connection: Any, sql: str, params: Sequence[Any] = ()) -> list[tuple[
 
 
 async def _seed() -> None:
-    from redis.asyncio import Redis  # noqa: PLC0415
-
-    from utils.settings import (  # noqa: PLC0415
-        REDIS_DB_NUMBER,
-        REDIS_HOST,
-        REDIS_PASSWORD,
-        REDIS_PORT,
-        REDIS_SSL_ENABLED,
+    from routers.common import (  # noqa: PLC0415
+        KYMA_AGENT_CONVERSATION_INSTANCE_PREFIX,
+        KYMA_AGENT_CONVERSATION_PREFIX,
+        _deserialize_messages,
+        save_conversation_history,
     )
+    from services.redis import get_redis  # noqa: PLC0415
 
-    connection = Redis(
-        host=str(REDIS_HOST),
-        port=REDIS_PORT,
-        db=REDIS_DB_NUMBER,
-        password=str(REDIS_PASSWORD) or None,
-        ssl=bool(REDIS_SSL_ENABLED),
-    )
+    redis_service = get_redis()
+    connection = redis_service.get_connection()
     try:
         for session_id, messages in _CONVERSATIONS.items():
-            await connection.set(f"kyma_agent_conversation:{session_id}", json.dumps(messages))
+            await save_conversation_history(redis_service, session_id, _deserialize_messages(messages))
+        smoke_hash = _session_hash(_IDENTITY_SMOKE_SESSION)
+        smoke_history_key = f"{KYMA_AGENT_CONVERSATION_PREFIX}{_IDENTITY_SMOKE_SESSION}"
+        smoke_instance_key = f"{KYMA_AGENT_CONVERSATION_INSTANCE_PREFIX}{smoke_hash}"
+        try:
+            smoke_messages = _deserialize_messages(
+                [{"type": "human", "content": "synthetic identity smoke"}, {"type": "ai", "content": "ok"}]
+            )
+            await save_conversation_history(redis_service, _IDENTITY_SMOKE_SESSION, smoke_messages)
+            first_id = await connection.get(smoke_instance_key)
+            await save_conversation_history(redis_service, _IDENTITY_SMOKE_SESSION, smoke_messages)
+            _require(first_id is not None and await connection.get(smoke_instance_key) == first_id, "REDIS_STABLE_ID")
+            await connection.set(smoke_history_key, "{malformed", ex=60)
+            await save_conversation_history(redis_service, _IDENTITY_SMOKE_SESSION, smoke_messages)
+            repaired_id = await connection.get(smoke_instance_key)
+            repaired_history = await connection.get(smoke_history_key)
+            _require(repaired_id is not None and repaired_id != first_id, "REDIS_MALFORMED_REPAIR_ID")
+            _require(isinstance(json.loads(repaired_history), list), "REDIS_MALFORMED_REPAIR_HISTORY")
+        finally:
+            await connection.delete(smoke_history_key, smoke_instance_key)
         _require(await connection.ping(), "REDIS_SEED_PING")
     finally:
         await connection.aclose()
@@ -190,42 +198,44 @@ async def _seed() -> None:
 
 
 async def _append_turn() -> None:
-    from redis.asyncio import Redis  # noqa: PLC0415
-
-    from utils.settings import (  # noqa: PLC0415
-        REDIS_DB_NUMBER,
-        REDIS_HOST,
-        REDIS_PASSWORD,
-        REDIS_PORT,
-        REDIS_SSL_ENABLED,
+    from routers.common import (  # noqa: PLC0415
+        _deserialize_messages,
+        load_conversation_history,
+        save_conversation_history,
     )
+    from services.redis import get_redis  # noqa: PLC0415
 
-    connection = Redis(
-        host=str(REDIS_HOST),
-        port=REDIS_PORT,
-        db=REDIS_DB_NUMBER,
-        password=str(REDIS_PASSWORD) or None,
-        ssl=bool(REDIS_SSL_ENABLED),
-    )
+    redis_service = get_redis()
+    connection = redis_service.get_connection()
     try:
-        key = f"kyma_agent_conversation:{_SESSION_BETA}"
-        raw = await connection.get(key)
-        if raw is None:
-            raise E2EValidationError("REDIS_APPEND_SOURCE")
-        if isinstance(raw, bytes):
-            raw = raw.decode()
-        if not isinstance(raw, str):
-            raise E2EValidationError("REDIS_APPEND_TYPE")
-        messages = json.loads(raw)
-        _require(isinstance(messages, list), "REDIS_APPEND_JSON")
+        messages = await load_conversation_history(redis_service, _SESSION_BETA)
+        _require(bool(messages), "REDIS_APPEND_SOURCE")
         marker = _APPENDED_TURN[0]["content"]
-        if not any(isinstance(message, dict) and message.get("content") == marker for message in messages):
-            messages.extend(_APPENDED_TURN)
-            await connection.set(key, json.dumps(messages))
+        if not any(message.content == marker for message in messages):
+            messages.extend(_deserialize_messages(_APPENDED_TURN))
+            await save_conversation_history(redis_service, _SESSION_BETA, messages)
         _require(await connection.ping(), "REDIS_APPEND_PING")
     finally:
         await connection.aclose()
     print("appended_conversations=1 appended_complete_turns=1")
+
+
+async def _read_conversation_ids() -> dict[str, str]:
+    from conversation_segmentation import config  # noqa: PLC0415
+    from conversation_segmentation.redis_reader import read_conversation_id  # noqa: PLC0415
+    from services.redis import get_redis  # noqa: PLC0415
+
+    connection = get_redis().get_connection()
+    try:
+        conversation_ids = {
+            session_id: await read_conversation_id(connection, config.CONVERSATION_INSTANCE_KEY_PREFIX, session_id)
+            for session_id in _CONVERSATIONS
+        }
+        _require(all(re.fullmatch(r"[0-9a-f]{64}", value) for value in conversation_ids.values()), "REDIS_INSTANCE_IDS")
+        _require(len(set(conversation_ids.values())) == EXPECTED_CONVERSATIONS, "REDIS_INSTANCE_ID_UNIQUENESS")
+        return conversation_ids
+    finally:
+        await connection.aclose()
 
 
 def _validate(expected_runs: int) -> None:  # noqa: PLR0915
@@ -235,6 +245,7 @@ def _validate(expected_runs: int) -> None:  # noqa: PLR0915
         expected_runs in (EXPECTED_FIRST_RUNS, EXPECTED_SECOND_RUNS, EXPECTED_THIRD_RUNS),
         "EXPECTED_RUN_COUNT",
     )
+    conversation_ids = asyncio.run(_read_conversation_ids())
     connection, schema = _hana_connection()
     run_table, assignment_table, aggregate_table, watermark_table = _table_names()
     try:
@@ -281,7 +292,10 @@ def _validate(expected_runs: int) -> None:  # noqa: PLR0915
     if expected_runs > EXPECTED_FIRST_RUNS:
         _require(runs[-1][1] is not None, "RUN_WINDOW_START")
 
-    expected_hashes = {_conversation_hash(_SESSION_ALPHA), _conversation_hash(_SESSION_BETA)}
+    expected_hashes = {
+        _conversation_hash(_SESSION_ALPHA, conversation_ids[_SESSION_ALPHA]),
+        _conversation_hash(_SESSION_BETA, conversation_ids[_SESSION_BETA]),
+    }
     _require(bool(assignments), "ASSIGNMENT_ROWS_PRESENT")
     _require({str(row[0]) for row in assignments} == expected_hashes, "ASSIGNMENT_CONVERSATION_COUNTS")
     _require(sum(int(row[3]) for row in assignments) == expected_total_turns, "ASSIGNMENT_TURN_COUNT")
@@ -302,10 +316,10 @@ def _validate(expected_runs: int) -> None:  # noqa: PLR0915
     _require(all(row[4] == runs[-1][0] for row in aggregates), "AGGREGATE_RUN_ID")
 
     expected_watermarks = {
-        _session_hash(_SESSION_ALPHA): (2, _head_fingerprint(_SESSION_ALPHA)),
+        _session_hash(_SESSION_ALPHA): (2, conversation_ids[_SESSION_ALPHA]),
         _session_hash(_SESSION_BETA): (
             1 if expected_runs == EXPECTED_FIRST_RUNS else 2,
-            _head_fingerprint(_SESSION_BETA),
+            conversation_ids[_SESSION_BETA],
         ),
     }
     actual_watermarks = {str(key): (int(turns), str(fingerprint)) for key, turns, fingerprint in watermarks}

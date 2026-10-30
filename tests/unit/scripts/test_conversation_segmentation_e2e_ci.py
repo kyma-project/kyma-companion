@@ -62,6 +62,10 @@ def test_build_minimal_config_allowlists_fields(tmp_path: Path) -> None:
 
     assert config["SEGMENTATION_MAX_CONVERSATIONS"] == EXPECTED_FIXTURE_CONVERSATIONS
     assert config["REDIS_HOST"] == "redis-stack.redis.svc.cluster.local"
+    assert config["KYMA_AGENT_CONVERSATION_PREFIX"] == "kyma_agent_conversation:"
+    assert config["KYMA_AGENT_CONVERSATION_INSTANCE_PREFIX"] == "kyma_agent_conversation_instance:"
+    assert config["SEGMENTATION_CLASSIFICATION_MAX_ATTEMPTS"] == 3  # noqa: PLR2004
+    assert config["SEGMENTATION_CLASSIFICATION_RETRY_BASE_SECONDS"] == 1
     assert config["models"] == [{"name": "gpt-test", "deployment_id": "deployment", "temperature": 0}]
     assert "TEST_CLUSTER_AUTH_TOKEN" not in config
     assert "LANGFUSE_SECRET_KEY" not in config

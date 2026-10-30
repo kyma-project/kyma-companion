@@ -8,6 +8,7 @@ on:
       - main
     paths:
       - "src/conversation_segmentation/**"
+      - "src/routers/common.py"
       - "src/services/hana.py"
       - "src/services/redis.py"
       - "src/utils/config.py"
