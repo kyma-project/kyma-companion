@@ -67,7 +67,6 @@ Settings are loaded from `CONFIG_PATH` and environment variables through `python
 | `SEGMENTATION_CLASSIFICATION_RETRY_BASE_SECONDS` | `1` | Base delay for exponential retry backoff. |
 
 Redis, HANA, and model credentials use the normal Companion settings. The job intentionally avoids logging conversation
-content and credentials; its operational logs contain counts, table-creation events, and exception classes.
 
 `TAXONOMY_VERSION` is a persistence compatibility boundary. A run fails before processing when existing run history or
 assignments use another version; changing taxonomy requires an explicit migration, table reset, or versioned table set.
