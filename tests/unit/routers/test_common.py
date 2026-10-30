@@ -2,9 +2,10 @@
 Unit tests for routers/common.py shared dependencies and utilities.
 """
 
+import hashlib
 import json
 from http import HTTPStatus
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 from fastapi import HTTPException
@@ -14,6 +15,8 @@ from routers.common import (
     init_k8s_client,
     init_models_dict,
     init_search_tool,
+    load_conversation_history,
+    save_conversation_history,
 )
 from services.data_sanitizer import IDataSanitizer
 from services.encryption_cache import IEncryptionCache
@@ -26,6 +29,67 @@ _VALID_PAYLOAD = {
     "x-k8s-authorization": "Bearer test-token",
 }
 _VALID_PAYLOAD_BYTES = json.dumps(_VALID_PAYLOAD).encode()
+
+
+def _redis_wrapper(stored_value: str | None = None) -> tuple[MagicMock, MagicMock]:
+    wrapper = MagicMock()
+    wrapper.has_connection.return_value = True
+    connection = MagicMock()
+    connection.get = AsyncMock(return_value=stored_value)
+    connection.eval = AsyncMock()
+    wrapper.get_connection.return_value = connection
+    return wrapper, connection
+
+
+@pytest.mark.asyncio
+async def test_conversation_history_gets_stable_instance_id_on_first_save():
+    from langchain_core.messages import HumanMessage
+
+    redis, connection = _redis_wrapper()
+    await save_conversation_history(redis, "session", [HumanMessage(content="hello")])
+
+    args = connection.eval.await_args.args
+    assert args[3] == f"kyma_agent_conversation_instance:{hashlib.sha256(b'session').hexdigest()}"
+    assert json.loads(args[4]) == [{"type": "human", "content": "hello"}]
+    assert len(args[6]) == 64  # noqa: PLR2004  # random new-generation ID
+    assert args[7] == hashlib.sha256(b"hello").hexdigest()  # legacy migration ID
+
+
+@pytest.mark.asyncio
+async def test_conversation_history_keeps_list_format_for_rolling_compatibility():
+    from langchain_core.messages import HumanMessage
+
+    stored = json.dumps([{"type": "human", "content": "hello"}])
+    redis, connection = _redis_wrapper(stored)
+
+    loaded = await load_conversation_history(redis, "session")
+    await save_conversation_history(redis, "session", [HumanMessage(content="hello again")])
+
+    assert len(loaded) == 1 and loaded[0].content == "hello"
+    assert json.loads(connection.eval.await_args.args[4]) == [{"type": "human", "content": "hello again"}]
+
+
+@pytest.mark.asyncio
+async def test_conversation_history_supplies_legacy_fingerprint_for_atomic_migration():
+    from langchain_core.messages import HumanMessage
+
+    stored = json.dumps([{"type": "human", "content": "hello"}])
+    redis, connection = _redis_wrapper(stored)
+    await save_conversation_history(redis, "session", [HumanMessage(content="hello")])
+
+    assert connection.eval.await_args.args[7] == hashlib.sha256(b"hello").hexdigest()
+
+
+@pytest.mark.asyncio
+async def test_malformed_history_can_be_replaced_with_valid_list():
+    from langchain_core.messages import HumanMessage
+
+    redis, connection = _redis_wrapper("{malformed")
+    assert await load_conversation_history(redis, "session") == []
+
+    await save_conversation_history(redis, "session", [HumanMessage(content="fresh")])
+
+    assert json.loads(connection.eval.await_args.args[4]) == [{"type": "human", "content": "fresh"}]
 
 
 class TestInitK8sClient:
