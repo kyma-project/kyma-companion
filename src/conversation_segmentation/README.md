@@ -103,4 +103,4 @@ Companion volumes; substantially larger histories require batched state reads an
 - `hana_writer.py` — table creation, checkpoints, snapshots, and transactions.
 - `watermark.py` — session hashing and incremental bookmarks.
 
-Internal deployment procedures, landscape validation records, and the ready-to-edit Job manifest are maintained in the
+Internal deployment procedures, landscape validation records, and the ready-to-edit Job manifest are maintained in the AI Force repository under `docs/how-tos/conversation-topic-analysis` and `docs/evaluations/conversation-topic-analysis`.
