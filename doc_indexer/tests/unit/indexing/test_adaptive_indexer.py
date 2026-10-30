@@ -165,7 +165,9 @@ class TestAdaptiveSplitMarkdownIndexer:
     @pytest.mark.parametrize(
         "given_docs,wanted_results",
         [
-            # Test case 1: Document without title
+            # Test case 1: Document without title (preamble) -- filename used as title.
+            # source="test.md" is a bare path; build_chunk_metadata strips a module prefix
+            # so path becomes "" and the fallback title is "unknown".
             (
                 [
                     Document(
@@ -175,8 +177,8 @@ class TestAdaptiveSplitMarkdownIndexer:
                 ],
                 [
                     {
-                        "content": "Some content without a title",
-                        "metadata": {"source": "test.md"},
+                        "content": "# unknown\n\nSome content without a title",
+                        "metadata": {"module": "test.md"},
                         "expected_chunks": 0,
                     }
                 ],
@@ -192,7 +194,7 @@ class TestAdaptiveSplitMarkdownIndexer:
                 [
                     {
                         "content": "# New Title\nSome content",
-                        "metadata": {"title": "New Title", "source": "test.md"},
+                        "metadata": {"title": "New Title"},
                         "expected_chunks": 0,
                     }
                 ],
@@ -207,7 +209,7 @@ class TestAdaptiveSplitMarkdownIndexer:
                 [
                     {
                         "content": "# New Title\n\n\nSome content",
-                        "metadata": {"title": "New Title", "source": "test.md"},
+                        "metadata": {"title": "New Title"},
                         "expected_chunks": 0,
                     }
                 ],
@@ -228,7 +230,6 @@ class TestAdaptiveSplitMarkdownIndexer:
                         "content": "# Main Header - Sub Header\n\nSome content\n\n## Sub Header\n\nMore content",
                         "metadata": {
                             "title": "Main Header - Sub Header",
-                            "source": "test.md",
                         },
                         "expected_chunks": 0,
                     }
@@ -310,10 +311,17 @@ class TestAdaptiveSplitMarkdownIndexer:
                             "Subsubsubtitle content"
                         ),
                         metadata={
-                            "source": "test1.md",
+                            "module": "test1.md",
+                            "path": "",
+                            "repo": None,
+                            "commit": None,
+                            "url": "test1.md",
                             "title": "Title",
-                            "module": "kyma",
-                            "version": "latest",
+                            "doc_type": None,
+                            "audience": ["public"],
+                            "heading": "Title",
+                            "chunk_index": 0,
+                            "total_chunks": 1,
                         },
                     ),
                 ],
@@ -343,10 +351,17 @@ class TestAdaptiveSplitMarkdownIndexer:
                     Document(
                         page_content="# Title 1\nTitle content for testing ...",
                         metadata={
-                            "source": "test2.md",
+                            "module": "test2.md",
+                            "path": "",
+                            "repo": None,
+                            "commit": None,
+                            "url": "test2.md",
                             "title": "Title 1",
-                            "module": "kyma",
-                            "version": "latest",
+                            "doc_type": None,
+                            "audience": ["public"],
+                            "heading": "Title 1",
+                            "chunk_index": 0,
+                            "total_chunks": 4,
                         },
                     ),
                     Document(
@@ -354,19 +369,33 @@ class TestAdaptiveSplitMarkdownIndexer:
                             "## Subtitle 1\nSubtitle content for testing ...\n### Subsubtitle 1\nSubsubtitle conten"
                         ),
                         metadata={
-                            "source": "test2.md",
+                            "module": "test2.md",
+                            "path": "",
+                            "repo": None,
+                            "commit": None,
+                            "url": "test2.md",
                             "title": "Title 1 - Subtitle 1",
-                            "module": "kyma",
-                            "version": "latest",
+                            "doc_type": None,
+                            "audience": ["public"],
+                            "heading": "Subtitle 1",
+                            "chunk_index": 1,
+                            "total_chunks": 4,
                         },
                     ),
                     Document(
                         page_content="# Title 2\nTitle2 content for testing ...",
                         metadata={
-                            "source": "test2.md",
+                            "module": "test2.md",
+                            "path": "",
+                            "repo": None,
+                            "commit": None,
+                            "url": "test2.md",
                             "title": "Title 2",
-                            "module": "kyma",
-                            "version": "latest",
+                            "doc_type": None,
+                            "audience": ["public"],
+                            "heading": "Title 2",
+                            "chunk_index": 2,
+                            "total_chunks": 4,
                         },
                     ),
                     Document(
@@ -377,10 +406,17 @@ class TestAdaptiveSplitMarkdownIndexer:
                             "Subsubtitle2 content for testing ..."
                         ),
                         metadata={
-                            "source": "test2.md",
+                            "module": "test2.md",
+                            "path": "",
+                            "repo": None,
+                            "commit": None,
+                            "url": "test2.md",
                             "title": "Title 2 - Subtitle 2",
-                            "module": "kyma",
-                            "version": "latest",
+                            "doc_type": None,
+                            "audience": ["public"],
+                            "heading": "Subtitle 2",
+                            "chunk_index": 3,
+                            "total_chunks": 4,
                         },
                     ),
                 ],
@@ -422,19 +458,33 @@ class TestAdaptiveSplitMarkdownIndexer:
                     Document(
                         page_content="# Title 1\nTitle content for testing ...",
                         metadata={
-                            "source": "test3.md",
+                            "module": "test3.md",
+                            "path": "",
+                            "repo": None,
+                            "commit": None,
+                            "url": "test3.md",
                             "title": "Title 1",
-                            "module": "kyma",
-                            "version": "latest",
+                            "doc_type": None,
+                            "audience": ["public"],
+                            "heading": "Title 1",
+                            "chunk_index": 0,
+                            "total_chunks": 9,
                         },
                     ),
                     Document(
                         page_content=("## Subtitle 1\nSubtitle content for testing ..."),
                         metadata={
-                            "source": "test3.md",
+                            "module": "test3.md",
+                            "path": "",
+                            "repo": None,
+                            "commit": None,
+                            "url": "test3.md",
                             "title": "Title 1 - Subtitle 1",
-                            "module": "kyma",
-                            "version": "latest",
+                            "doc_type": None,
+                            "audience": ["public"],
+                            "heading": "Subtitle 1",
+                            "chunk_index": 1,
+                            "total_chunks": 9,
                         },
                     ),
                     Document(
@@ -445,28 +495,49 @@ class TestAdaptiveSplitMarkdownIndexer:
                             "Subsubsubtitle content for testing ..."
                         ),
                         metadata={
-                            "source": "test3.md",
+                            "module": "test3.md",
+                            "path": "",
+                            "repo": None,
+                            "commit": None,
+                            "url": "test3.md",
                             "title": "Title 1 - Subtitle 1 - Subsubtitle 1",
-                            "module": "kyma",
-                            "version": "latest",
+                            "doc_type": None,
+                            "audience": ["public"],
+                            "heading": "Subsubtitle 1",
+                            "chunk_index": 2,
+                            "total_chunks": 9,
                         },
                     ),
                     Document(
                         page_content="# Title 2\nTitle2 content for testing ...",
                         metadata={
-                            "source": "test3.md",
+                            "module": "test3.md",
+                            "path": "",
+                            "repo": None,
+                            "commit": None,
+                            "url": "test3.md",
                             "title": "Title 2",
-                            "module": "kyma",
-                            "version": "latest",
+                            "doc_type": None,
+                            "audience": ["public"],
+                            "heading": "Title 2",
+                            "chunk_index": 3,
+                            "total_chunks": 9,
                         },
                     ),
                     Document(
                         page_content="## Subtitle 2\nSubtitle2 content for testing ...",
                         metadata={
-                            "source": "test3.md",
+                            "module": "test3.md",
+                            "path": "",
+                            "repo": None,
+                            "commit": None,
+                            "url": "test3.md",
                             "title": "Title 2 - Subtitle 2",
-                            "module": "kyma",
-                            "version": "latest",
+                            "doc_type": None,
+                            "audience": ["public"],
+                            "heading": "Subtitle 2",
+                            "chunk_index": 4,
+                            "total_chunks": 9,
                         },
                     ),
                     Document(
@@ -477,28 +548,49 @@ class TestAdaptiveSplitMarkdownIndexer:
                             "Subsubsubtitle2 content for testing ..."
                         ),
                         metadata={
-                            "source": "test3.md",
+                            "module": "test3.md",
+                            "path": "",
+                            "repo": None,
+                            "commit": None,
+                            "url": "test3.md",
                             "title": "Title 2 - Subtitle 2 - Subsubtitle 2",
-                            "module": "kyma",
-                            "version": "latest",
+                            "doc_type": None,
+                            "audience": ["public"],
+                            "heading": "Subsubtitle 2",
+                            "chunk_index": 5,
+                            "total_chunks": 9,
                         },
                     ),
                     Document(
                         page_content="# Title 3\nTitle3 content for testing ...",
                         metadata={
-                            "source": "test3.md",
+                            "module": "test3.md",
+                            "path": "",
+                            "repo": None,
+                            "commit": None,
+                            "url": "test3.md",
                             "title": "Title 3",
-                            "module": "kyma",
-                            "version": "latest",
+                            "doc_type": None,
+                            "audience": ["public"],
+                            "heading": "Title 3",
+                            "chunk_index": 6,
+                            "total_chunks": 9,
                         },
                     ),
                     Document(
                         page_content="## Subtitle 3\nSubtitle3 content for testing ...",
                         metadata={
-                            "source": "test3.md",
+                            "module": "test3.md",
+                            "path": "",
+                            "repo": None,
+                            "commit": None,
+                            "url": "test3.md",
                             "title": "Title 3 - Subtitle 3",
-                            "module": "kyma",
-                            "version": "latest",
+                            "doc_type": None,
+                            "audience": ["public"],
+                            "heading": "Subtitle 3",
+                            "chunk_index": 7,
+                            "total_chunks": 9,
                         },
                     ),
                     Document(
@@ -509,10 +601,17 @@ class TestAdaptiveSplitMarkdownIndexer:
                             "Subsubsubtitle3 content for testing ..."
                         ),
                         metadata={
-                            "source": "test3.md",
+                            "module": "test3.md",
+                            "path": "",
+                            "repo": None,
+                            "commit": None,
+                            "url": "test3.md",
                             "title": "Title 3 - Subtitle 3 - Subsubtitle 3",
-                            "module": "kyma",
-                            "version": "latest",
+                            "doc_type": None,
+                            "audience": ["public"],
+                            "heading": "Subsubtitle 3",
+                            "chunk_index": 8,
+                            "total_chunks": 9,
                         },
                     ),
                 ],
@@ -570,28 +669,49 @@ class TestAdaptiveSplitMarkdownIndexer:
                             "Subsubsubtitle content"
                         ),
                         metadata={
-                            "source": "test1.md",
+                            "module": "test1.md",
+                            "path": "",
+                            "repo": None,
+                            "commit": None,
+                            "url": "test1.md",
                             "title": "Title",
-                            "module": "kyma",
-                            "version": "latest",
+                            "doc_type": None,
+                            "audience": ["public"],
+                            "heading": "Title",
+                            "chunk_index": 0,
+                            "total_chunks": 1,
                         },
                     ),
                     Document(
                         page_content="# Title 1\nTitle content for testing ...",
                         metadata={
-                            "source": "test2.md",
+                            "module": "test2.md",
+                            "path": "",
+                            "repo": None,
+                            "commit": None,
+                            "url": "test2.md",
                             "title": "Title 1",
-                            "module": "kyma",
-                            "version": "latest",
+                            "doc_type": None,
+                            "audience": ["public"],
+                            "heading": "Title 1",
+                            "chunk_index": 0,
+                            "total_chunks": 6,
                         },
                     ),
                     Document(
                         page_content=("## Subtitle 1\nSubtitle content for testing ..."),
                         metadata={
-                            "source": "test2.md",
+                            "module": "test2.md",
+                            "path": "",
+                            "repo": None,
+                            "commit": None,
+                            "url": "test2.md",
                             "title": "Title 1 - Subtitle 1",
-                            "module": "kyma",
-                            "version": "latest",
+                            "doc_type": None,
+                            "audience": ["public"],
+                            "heading": "Subtitle 1",
+                            "chunk_index": 1,
+                            "total_chunks": 6,
                         },
                     ),
                     Document(
@@ -602,28 +722,49 @@ class TestAdaptiveSplitMarkdownIndexer:
                             "Subsubsubtitle content for testing ..."
                         ),
                         metadata={
-                            "source": "test2.md",
+                            "module": "test2.md",
+                            "path": "",
+                            "repo": None,
+                            "commit": None,
+                            "url": "test2.md",
                             "title": "Title 1 - Subtitle 1 - Subsubtitle 1",
-                            "module": "kyma",
-                            "version": "latest",
+                            "doc_type": None,
+                            "audience": ["public"],
+                            "heading": "Subsubtitle 1",
+                            "chunk_index": 2,
+                            "total_chunks": 6,
                         },
                     ),
                     Document(
                         page_content="# Title 2\nTitle2 content for testing ...",
                         metadata={
-                            "source": "test2.md",
+                            "module": "test2.md",
+                            "path": "",
+                            "repo": None,
+                            "commit": None,
+                            "url": "test2.md",
                             "title": "Title 2",
-                            "module": "kyma",
-                            "version": "latest",
+                            "doc_type": None,
+                            "audience": ["public"],
+                            "heading": "Title 2",
+                            "chunk_index": 3,
+                            "total_chunks": 6,
                         },
                     ),
                     Document(
                         page_content="## Subtitle 2\nSubtitle2 content for testing ...",
                         metadata={
-                            "source": "test2.md",
+                            "module": "test2.md",
+                            "path": "",
+                            "repo": None,
+                            "commit": None,
+                            "url": "test2.md",
                             "title": "Title 2 - Subtitle 2",
-                            "module": "kyma",
-                            "version": "latest",
+                            "doc_type": None,
+                            "audience": ["public"],
+                            "heading": "Subtitle 2",
+                            "chunk_index": 4,
+                            "total_chunks": 6,
                         },
                     ),
                     Document(
@@ -634,10 +775,17 @@ class TestAdaptiveSplitMarkdownIndexer:
                             "Subsubsubtitle2 content for testing ..."
                         ),
                         metadata={
-                            "source": "test2.md",
+                            "module": "test2.md",
+                            "path": "",
+                            "repo": None,
+                            "commit": None,
+                            "url": "test2.md",
                             "title": "Title 2 - Subtitle 2 - Subsubtitle 2",
-                            "module": "kyma",
-                            "version": "latest",
+                            "doc_type": None,
+                            "audience": ["public"],
+                            "heading": "Subsubtitle 2",
+                            "chunk_index": 5,
+                            "total_chunks": 6,
                         },
                     ),
                 ],
@@ -671,10 +819,17 @@ class TestAdaptiveSplitMarkdownIndexer:
                     Document(
                         page_content="# Title 1\nTitle 1 content for testing ...",
                         metadata={
-                            "source": "test4.md",
+                            "module": "test4.md",
+                            "path": "",
+                            "repo": None,
+                            "commit": None,
+                            "url": "test4.md",
                             "title": "Title 1",
-                            "module": "kyma",
-                            "version": "latest",
+                            "doc_type": None,
+                            "audience": ["public"],
+                            "heading": "Title 1",
+                            "chunk_index": 0,
+                            "total_chunks": 4,
                         },
                     ),
                     Document(
@@ -685,10 +840,17 @@ class TestAdaptiveSplitMarkdownIndexer:
                             "$ kubectl get pods # this lists the pods in the cluster"
                         ),
                         metadata={
-                            "source": "test4.md",
+                            "module": "test4.md",
+                            "path": "",
+                            "repo": None,
+                            "commit": None,
+                            "url": "test4.md",
                             "title": "Title 1 - Subtitle 1",
-                            "module": "kyma",
-                            "version": "latest",
+                            "doc_type": None,
+                            "audience": ["public"],
+                            "heading": "Subtitle 1",
+                            "chunk_index": 1,
+                            "total_chunks": 4,
                         },
                     ),
                     Document(
@@ -703,19 +865,33 @@ class TestAdaptiveSplitMarkdownIndexer:
                             "Subsubsubtitle 1 content for testing ..."
                         ),
                         metadata={
-                            "source": "test4.md",
+                            "module": "test4.md",
+                            "path": "",
+                            "repo": None,
+                            "commit": None,
+                            "url": "test4.md",
                             "title": "Title 1 - Subtitle 1 - Subsubtitle 1",
-                            "module": "kyma",
-                            "version": "latest",
+                            "doc_type": None,
+                            "audience": ["public"],
+                            "heading": "Subsubtitle 1",
+                            "chunk_index": 2,
+                            "total_chunks": 4,
                         },
                     ),
                     Document(
                         page_content="## Subtitle 2\nSubtitle 2 content for testing ...",
                         metadata={
-                            "source": "test4.md",
+                            "module": "test4.md",
+                            "path": "",
+                            "repo": None,
+                            "commit": None,
+                            "url": "test4.md",
                             "title": "Title 1 - Subtitle 2",
-                            "module": "kyma",
-                            "version": "latest",
+                            "doc_type": None,
+                            "audience": ["public"],
+                            "heading": "Subtitle 2",
+                            "chunk_index": 3,
+                            "total_chunks": 4,
                         },
                     ),
                 ],
@@ -729,3 +905,72 @@ class TestAdaptiveSplitMarkdownIndexer:
         # Then:
         # Compare the actual chunks with expected results
         assert chunks == wanted_results
+
+
+class TestPreambleChunk:
+    """Chunks without any Markdown heading (preamble) get a filename-derived title."""
+
+    def test_preamble_gets_filename_title(self, mock_embedding, mock_connection, mock_hana_db):
+        indexer = AdaptiveSplitMarkdownIndexer(
+            docs_path="/app/docs",
+            embedding=mock_embedding,
+            connection=mock_connection,
+            table_name="test_table",
+            min_chunk_token_count=1,
+            max_chunk_token_count=1000,
+        )
+        # Content with no Markdown headings -- a pure preamble.
+        doc = Document(
+            page_content="This module manages eventing in Kyma. It handles subscriptions and event delivery.",
+            metadata={"source": "/app/docs/eventing-manager/README.md"},
+        )
+
+        chunks = list(indexer.get_document_chunks([doc]))
+
+        assert len(chunks) == 1
+        assert chunks[0].metadata["title"] == "README"
+        assert chunks[0].metadata["heading"] == "README"
+
+    def test_preamble_title_is_filename_stem(self, mock_embedding, mock_connection, mock_hana_db):
+        indexer = AdaptiveSplitMarkdownIndexer(
+            docs_path="/app/docs",
+            embedding=mock_embedding,
+            connection=mock_connection,
+            table_name="test_table",
+            min_chunk_token_count=1,
+            max_chunk_token_count=1000,
+        )
+        doc = Document(
+            page_content="Some content without any heading at all.",
+            metadata={"source": "/app/docs/eventing-manager/README.md"},
+        )
+
+        chunks = list(indexer.get_document_chunks([doc]))
+
+        assert len(chunks) == 1
+        assert chunks[0].metadata["title"] == "README"
+
+    def test_preamble_in_large_file_is_not_dropped(self, mock_embedding, mock_connection, mock_hana_db):
+        # A file large enough to be split (exceeds max_chunk_token_count=30) but with
+        # preamble text before the first heading. The preamble must not be silently dropped.
+        indexer = AdaptiveSplitMarkdownIndexer(
+            docs_path="/app/docs",
+            embedding=mock_embedding,
+            connection=mock_connection,
+            table_name="test_table",
+            min_chunk_token_count=1,
+            max_chunk_token_count=30,
+        )
+        doc = Document(
+            page_content=(
+                "This is the preamble before any heading. It contains important introductory text.\n\n"
+                "# Section One\n\nThis section has enough content to push the document over the token limit.\n\n"
+                "# Section Two\n\nMore content here to ensure splitting occurs at the header level.\n\n"
+            ),
+            metadata={"source": "/app/docs/eventing-manager/overview.md"},
+        )
+
+        chunks = list(indexer.get_document_chunks([doc]))
+
+        titles = [c.metadata["title"] for c in chunks]
+        assert "overview" in titles, f"preamble chunk missing; got titles: {titles}"

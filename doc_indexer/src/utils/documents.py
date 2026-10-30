@@ -1,3 +1,5 @@
+from typing import cast
+
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain_core.documents import Document
 
@@ -16,8 +18,9 @@ def load_documents(docs_path: str) -> list[Document]:
         raise ValueError("Provided path is empty")
 
     try:
-        loader = DirectoryLoader(docs_path, loader_cls=TextLoader, recursive=True)
-        docs = loader.load()
+        # Only markdown is indexed; this also skips the fetcher's manifest.json in docs_path.
+        loader = DirectoryLoader(docs_path, glob="**/*.md", loader_cls=TextLoader, recursive=True)
+        docs = cast(list[Document], loader.load())
         logger.info(f"Loaded {len(docs)} document(s)", extra={"path": docs_path})
         return docs
     except FileNotFoundError:

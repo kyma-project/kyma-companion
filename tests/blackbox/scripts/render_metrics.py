@@ -264,13 +264,32 @@ const baseOpts = (extra={}) => Object.assign({
 
 function mkChart(id, config){ const c = el(id); if(c) new Chart(c.getContext('2d'), config); }
 
-/* scenarios that actually ran (have tokens or latency) sorted by tokens desc */
-function runScenarios(){
-  return scenarios.filter(s => (s.total_tokens||0) > 0 || (s.total_latency_seconds||0) > 0)
-                  .slice().sort((a,b)=> (b.total_tokens||0)-(a.total_tokens||0));
+const _barCharts = {};
+function mkBarChart(id, config){
+  if (_barCharts[id]) {
+    _barCharts[id].data = config.data;
+    _barCharts[id].update();
+    return;
+  }
+  const c = el(id);
+  if (!c) return;
+  _barCharts[id] = new Chart(c.getContext('2d'), config);
 }
 
-function renderCharts(){
+/* scenarios that actually ran (have tokens or latency) */
+function runScenarios(){
+  const sort = (el('chartSort') || {}).value || 'tokens';
+  const active = scenarios.filter(s => (s.total_tokens||0) > 0 || (s.total_latency_seconds||0) > 0).slice();
+  if (sort === 'id') {
+    const num = s => { const m = String(s.scenario_id).match(/(\d+)$/); return m ? parseInt(m[1],10) : 0; };
+    active.sort((a,b) => num(a) - num(b));
+  } else {
+    active.sort((a,b) => (b.total_tokens||0) - (a.total_tokens||0));
+  }
+  return active;
+}
+
+function renderBarCharts(){
   const active = runScenarios();
   const labels = active.map(s => s.scenario_id);
   const baseFor = (arr, key) => arr.map(s => { const b = baseOf(s.scenario_id); return b ? (b[key]||0) : 0; });
@@ -279,26 +298,29 @@ function renderCharts(){
   // Total tokens per scenario (current vs baseline)
   const tokDs = [{ label:'current', data:active.map(s=>s.total_tokens||0), backgroundColor:CUR }];
   if (HAS_BASELINE) tokDs.push({ label:'baseline', data:baseFor(active,'total_tokens'), backgroundColor:BASE });
-  mkChart('chTokens', { type:'bar', data:{ labels, datasets:tokDs },
+  mkBarChart('chTokens', { type:'bar', data:{ labels, datasets:tokDs },
     options: baseOpts({ scales:{ x:{ ticks:{color:'#8ea0c0',font:{size:9}}, grid:{display:false}},
       y:{ ticks:{color:'#8ea0c0'}, grid:{color:'rgba(255,255,255,.05)'}} } }) });
 
   // Latency per scenario (current vs baseline)
   const latDs = [{ label:'current (s)', data:active.map(s=>s.total_latency_seconds||0), backgroundColor:'#22d3ee' }];
   if (HAS_BASELINE) latDs.push({ label:'baseline (s)', data:baseFor(active,'total_latency_seconds'), backgroundColor:BASE });
-  mkChart('chLatency', { type:'bar', data:{ labels, datasets:latDs }, options: baseOpts() });
+  mkBarChart('chLatency', { type:'bar', data:{ labels, datasets:latDs }, options: baseOpts() });
 
   // LLM calls per scenario (current vs baseline)
   const llmDs = [{ label:'current', data:active.map(s=>s.llm_call_count||0), backgroundColor:'#3fb950' }];
   if (HAS_BASELINE) llmDs.push({ label:'baseline', data:baseFor(active,'llm_call_count'), backgroundColor:BASE });
-  mkChart('chLlm', { type:'bar', data:{ labels, datasets:llmDs }, options: baseOpts() });
+  mkBarChart('chLlm', { type:'bar', data:{ labels, datasets:llmDs }, options: baseOpts() });
 
   // Tool calls per scenario (current vs baseline)
   const toolDs = [{ label:'current', data:active.map(s=>s.tool_call_count||0), backgroundColor:'#d29922' }];
   if (HAS_BASELINE) toolDs.push({ label:'baseline', data:baseFor(active,'tool_call_count'), backgroundColor:BASE });
-  mkChart('chToolCalls', { type:'bar', data:{ labels, datasets:toolDs }, options: baseOpts() });
+  mkBarChart('chToolCalls', { type:'bar', data:{ labels, datasets:toolDs }, options: baseOpts() });
+}
 
-  // Scenario status donut
+function renderCharts(){
+  renderBarCharts();
+  const active = runScenarios();
   const sc = summary.status_counts || {}; const scen = sc.scenarios || {};
   mkChart('chStatus', { type:'doughnut', data:{ labels:['passed','failed'],
       datasets:[{ data:[scen.passed||0, scen.failed||0], backgroundColor:['#3fb950','#f85149'], borderColor:'#171d2e', borderWidth:2 }]},
@@ -459,6 +481,8 @@ function renderScenarioDetail(s){
 function initTableControls(){
   el('search').addEventListener('input', renderTable);
   el('statusFilter').addEventListener('change', renderTable);
+  const sortSel = el('chartSort');
+  if (sortSel) sortSel.addEventListener('change', renderBarCharts);
   document.querySelectorAll('th[data-key]').forEach(th => th.addEventListener('click', () => {
     const k = th.getAttribute('data-key');
     if (sortKey===k) sortDir*=-1; else { sortKey=k; sortDir=-1; }
@@ -544,6 +568,13 @@ _HTML_TEMPLATE = """<!doctype html>
   </section>
 
   <section><h2>Tokens &amp; latency <span class="kv" id="cmpNote"></span></h2>
+    <div class="controls" style="margin-bottom:10px">
+      <label for="chartSort" style="color:var(--muted);font-size:13px">Sort bar charts:</label>
+      <select id="chartSort">
+        <option value="tokens">Default (tokens ↓)</option>
+        <option value="id">Scenario ID</option>
+      </select>
+    </div>
     <div class="grid">
       <div class="chart-box"><h3>Total tokens per scenario (current vs baseline)</h3><div class="chart-wrap tall"><canvas id="chTokens"></canvas></div></div>
       <div class="chart-box"><h3>Latency per scenario (current vs baseline)</h3><div class="chart-wrap tall"><canvas id="chLatency"></canvas></div></div>
