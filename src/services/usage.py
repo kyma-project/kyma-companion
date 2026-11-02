@@ -193,10 +193,7 @@ class RequestMetricsCallback(AsyncCallbackHandler):
 
 
 def _parse_usage(response: LLMResult) -> dict[str, Any] | None:
-    """Parse the token usage information from the LLM response.
-    This method is inspired by LangFuse's usage parsing logic.
-    https://github.com/langfuse/langfuse-python/blob/07a1993ff428d67c3b9fdd12585e6de6e128d20b/langfuse/callback/langchain.py#L1116
-    """
+    """Parse the token usage information from the LLM response."""
     # langchain-anthropic uses the usage field
     llm_usage_keys = ["token_usage", "usage"]
     llm_usage = None
@@ -238,10 +235,7 @@ def _parse_usage(response: LLMResult) -> dict[str, Any] | None:
 
 
 def _parse_usage_model(usage: pydantic.BaseModel | dict) -> dict[str, Any] | None:
-    """Parse the token usage model from the LLM response.
-    This method is inspired by LangFuse's usage parsing logic.
-    https://github.com/langfuse/langfuse-python/blob/07a1993ff428d67c3b9fdd12585e6de6e128d20b/langfuse/callback/langchain.py#L1116
-    """
+    """Parse the token usage model from the LLM response."""
     # maintains a list of key translations. For each key, the usage model is checked
     # and a new object will be created with the new key if the key exists in the usage model
     # All non-matched keys will remain on the object.
@@ -272,14 +266,14 @@ def _parse_usage_model(usage: pydantic.BaseModel | dict) -> dict[str, Any] | Non
 
     usage_model = usage.copy()  # Copy all existing key-value pairs
 
-    for model_key, langfuse_key in conversion_list:
+    for model_key, target_key in conversion_list:
         if model_key in usage_model:
             captured_count = usage_model.pop(model_key)
             final_count = (
                 sum(captured_count) if isinstance(captured_count, list) else captured_count
             )  # For Bedrock, the token count is a list when streamed
 
-            usage_model[langfuse_key] = final_count  # type: ignore
+            usage_model[target_key] = final_count  # type: ignore
 
     if isinstance(usage_model, pydantic.BaseModel):
         return dict(usage_model)

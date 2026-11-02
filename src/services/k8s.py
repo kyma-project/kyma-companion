@@ -50,10 +50,25 @@ class AuthType(StrEnum):
     UNKNOWN = "unknown"
 
 
+REQUIRED_CLUSTER_URL_SCHEME = "https"
+
+
+def get_allowed_k8s_domains() -> list[str]:
+    """Return the configured cluster domain allowlist (ALLOWED_K8S_DOMAINS).
+
+    The allowlist is server-side configuration only. It is read here and never
+    stored on K8sAuthHeaders, so client-supplied data cannot change it.
+    Entries are normalized (stripped, lowercased) so that a value which passes
+    startup validation also matches at request time.
+    """
+    return [domain.strip().lower() for domain in ALLOWED_K8S_DOMAINS]
+
+
 class K8sAuthHeaders(BaseModel):
     """Model for Kubernetes API authentication headers."""
 
-    model_config = ConfigDict(populate_by_name=True)
+    # Unknown keys (for example from the decrypted client payload) are ignored, not stored.
+    model_config = ConfigDict(populate_by_name=True, extra="ignore")
 
     x_cluster_url: str = Field(default="", validation_alias="x-cluster-url")
     x_cluster_certificate_authority_data: str = Field(
@@ -62,12 +77,13 @@ class K8sAuthHeaders(BaseModel):
     x_k8s_authorization: str | None = Field(default=None, validation_alias="x-k8s-authorization")
     x_client_certificate_data: str | None = Field(default=None, validation_alias="x-client-certificate-data")
     x_client_key_data: str | None = Field(default=None, validation_alias="x-client-key-data")
-    allowed_domains: list[str] = ALLOWED_K8S_DOMAINS
 
     def validate_headers(self) -> None:
         """Validate the Kubernetes API authentication headers."""
         if self.x_cluster_url == "":
             raise ValueError("x-cluster-url header is required.")
+        if urlparse(self.x_cluster_url).scheme.lower() != REQUIRED_CLUSTER_URL_SCHEME:
+            raise ValueError("x-cluster-url must use the https scheme.")
         if not self.is_cluster_url_allowed():
             raise ValueError(f"Cluster URL {self.x_cluster_url} is not allowed.")
         if self.x_cluster_certificate_authority_data == "":
@@ -81,10 +97,14 @@ class K8sAuthHeaders(BaseModel):
             )
 
     def is_cluster_url_allowed(self) -> bool:
-        """Check if the cluster URL is allowed based on the allowed domains."""
-        if len(self.allowed_domains) == 0:
-            logger.warning("ALLOWED_K8S_DOMAINS is empty. Skipping cluster URL validation.")
-            return True
+        """Check if the cluster URL is allowed based on the configured allowed domains.
+
+        Fails closed: an empty allowlist or a non-https URL is never allowed.
+        """
+        allowed_domains = get_allowed_k8s_domains()
+        if len(allowed_domains) == 0:
+            logger.error("ALLOWED_K8S_DOMAINS is empty. Rejecting cluster URL.")
+            return False
 
         try:
             # parse the URL to get the domain
@@ -92,11 +112,13 @@ class K8sAuthHeaders(BaseModel):
             if not parsed_url or not parsed_url.hostname:
                 raise ValueError("Failed to parse. Invalid cluster URL format.")
 
+            if parsed_url.scheme.lower() != REQUIRED_CLUSTER_URL_SCHEME:
+                return False
+
             domain = parsed_url.hostname.strip("/")
             # if hostname ends with any of the allowed domains, return True
             return any(
-                domain.endswith(f".{allowed_domain}") or domain == allowed_domain
-                for allowed_domain in self.allowed_domains
+                domain.endswith(f".{allowed_domain}") or domain == allowed_domain for allowed_domain in allowed_domains
             )
         except Exception as e:
             raise ValueError(f"Failed to check if cluster_url: {self.x_cluster_url}  is allowed") from e
@@ -323,8 +345,11 @@ class K8sClient:
             conf.cert_file = self.client_cert_temp_filename
             conf.key_file = self.client_key_temp_filename
         elif self.k8s_auth_headers.get_auth_type() == AuthType.TOKEN:
+            token = self.k8s_auth_headers.x_k8s_authorization
+            if token is None:
+                raise ValueError("Missing bearer token.")
             conf.api_key_prefix["BearerToken"] = "Bearer"
-            conf.api_key["BearerToken"] = self.k8s_auth_headers.x_k8s_authorization
+            conf.api_key["BearerToken"] = token
         else:
             raise ValueError("Unknown authentication type.")
 

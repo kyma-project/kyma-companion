@@ -1,17 +1,28 @@
-id: test-question-23 # format: test-<resource_kind>-<test_id>
+id: test-question-23
 description: Unrelated to existing cluster resources, ask how to use isto.
 queries:
-  - user_query: How can I use Istio in Kyma?
-    # https://github.com/SAP-docs/btp-cloud-platform/blob/main/docs/30-development/istio-module-26ffe00.md
-    resource:
-      kind: Cluster
-      api_version: ""
-      name: ""
-      namespace: "" # format: test-<resource_kind>-<test_id>
-    expectations:
-      - name: istio_is_included
-        statement: points out that Istio comes preinstalled in Kyma
-        threshold: 0.5
-        required: true
-
-
+- user_query: How can I use Istio in Kyma?
+  resource:
+    kind: Cluster
+    api_version: ''
+    name: ''
+    namespace: ''
+  expectations:
+  - name: istio_is_included
+    statement: points out that Istio comes preinstalled in Kyma
+    threshold: 0.5
+    required: true
+  - name: busola_ui_navigation
+    threshold: 0.5
+    required: false
+    statement: >-
+      explains that Istio resources in Kyma Dashboard are reached by first
+      selecting a namespace. The Istio CR is found by selecting the kyma-system
+      namespace and then opening the Kyma > Istio section (selecting the default
+      Istio CR); Istio networking and security resources (such as
+      VirtualServices, DestinationRules, Gateways) are found by selecting a
+      workload namespace and opening the Istio section in the sidebar.
+      Selecting the kyma-system namespace to reach the Istio CR is correct and
+      must NOT be penalized. The response is only wrong if it tells the user to
+      open a cluster-wide Cluster Details view or a cluster-wide Configuration >
+      Custom Resources view to find Istio resources.

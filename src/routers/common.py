@@ -2,7 +2,9 @@
 Common models, constants, and dependencies shared across routers.
 """
 
+import hashlib
 import json
+import secrets
 from http import HTTPStatus
 from typing import Annotated
 
@@ -22,7 +24,11 @@ from services.redis import Redis
 from utils.config import Config, get_config
 from utils.logging import get_logger
 from utils.models.factory import IModel, ModelFactory
-from utils.settings import KYMA_AGENT_CONVERSATION_TTL
+from utils.settings import (
+    KYMA_AGENT_CONVERSATION_INSTANCE_PREFIX,
+    KYMA_AGENT_CONVERSATION_PREFIX,
+    KYMA_AGENT_CONVERSATION_TTL,
+)
 from utils.singleton_meta import SingletonMeta
 
 logger = get_logger(__name__)
@@ -407,7 +413,47 @@ async def get_k8s_auth_headers_from_encrypted_payload(
 # Conversation History Helpers
 # ============================================================================
 
-KYMA_AGENT_CONVERSATION_PREFIX = "kyma_agent_conversation:"
+# Keep the existing list-valued history format so old and new pods interoperate during
+# rolling deployment. This script atomically selects one stable instance ID and writes
+# both keys. A stale metadata key is replaced when the history itself has expired.
+_SAVE_CONVERSATION_SCRIPT = """
+local history_exists = 0
+local history_type = redis.call('TYPE', KEYS[1]).ok
+if history_type == 'string' then
+    local history = redis.call('GET', KEYS[1])
+    local valid_json, decoded = pcall(cjson.decode, history)
+    local valid_messages = valid_json and type(decoded) == 'table' and string.match(history, '^%s*%[')
+    if valid_messages then
+        for _, message in ipairs(decoded) do
+            if type(message) ~= 'table' then
+                valid_messages = false
+                break
+            end
+        end
+    end
+    if valid_messages then
+        history_exists = 1
+    end
+elseif history_type ~= 'none' then
+    redis.call('DEL', KEYS[1])
+end
+local metadata_type = redis.call('TYPE', KEYS[2]).ok
+if metadata_type ~= 'string' and metadata_type ~= 'none' then
+    redis.call('DEL', KEYS[2])
+end
+local conversation_id = metadata_type == 'string' and redis.call('GET', KEYS[2]) or false
+if conversation_id and (string.len(conversation_id) ~= 64 or string.match(conversation_id, '[^0-9a-f]')) then
+    conversation_id = false
+end
+if history_exists == 0 then
+    conversation_id = ARGV[3]
+elseif not conversation_id then
+    conversation_id = ARGV[4]
+end
+redis.call('SET', KEYS[1], ARGV[1], 'EX', ARGV[2])
+redis.call('SET', KEYS[2], conversation_id, 'EX', ARGV[2])
+return conversation_id
+"""
 
 
 def _serialize_message(message: BaseMessage) -> dict:
@@ -445,6 +491,32 @@ def _deserialize_messages(messages_data: list[dict]) -> list[BaseMessage]:
     return messages
 
 
+def _message_text(content: str | list | None) -> str:
+    """Extract text from a serialized message using the same rules as segmentation."""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return "".join(
+            block["text"]
+            for block in content
+            if isinstance(block, dict) and block.get("type") == "text" and isinstance(block.get("text"), str)
+        )
+    return ""
+
+
+def _legacy_conversation_id(messages_data: list[dict]) -> str:
+    """Preserve the former first-query fingerprint when metadata is first introduced."""
+    first_query = next(
+        (
+            _message_text(message.get("content"))
+            for message in messages_data
+            if isinstance(message, dict) and message.get("type") == "human"
+        ),
+        "",
+    )
+    return hashlib.sha256(first_query.encode("utf-8")).hexdigest()
+
+
 async def load_conversation_history(redis_conn: Redis, session_id: str) -> list[BaseMessage]:
     """Load conversation history from Redis for the given session_id.
 
@@ -458,9 +530,6 @@ async def load_conversation_history(redis_conn: Redis, session_id: str) -> list[
         raw = await redis_conn.get_connection().get(key)
         if raw is None:
             return []
-
-        if isinstance(raw, bytes):
-            raw = raw.decode("utf-8")
 
         return _deserialize_messages(json.loads(raw))
     except Exception:
@@ -478,7 +547,19 @@ async def save_conversation_history(redis_conn: Redis, session_id: str, messages
 
     try:
         key = f"{KYMA_AGENT_CONVERSATION_PREFIX}{session_id}"
+        session_hash = hashlib.sha256(session_id.encode("utf-8")).hexdigest()
+        instance_key = f"{KYMA_AGENT_CONVERSATION_INSTANCE_PREFIX}{session_hash}"
         messages_data = [_serialize_message(msg) for msg in messages]
-        await redis_conn.get_connection().set(key, json.dumps(messages_data), ex=KYMA_AGENT_CONVERSATION_TTL)
+        conn = redis_conn.get_connection()
+        await conn.eval(
+            _SAVE_CONVERSATION_SCRIPT,
+            2,
+            key,
+            instance_key,
+            json.dumps(messages_data),
+            KYMA_AGENT_CONVERSATION_TTL,
+            secrets.token_hex(32),
+            _legacy_conversation_id(messages_data),
+        )
     except Exception:
         logger.exception("Failed to save conversation history to Redis")

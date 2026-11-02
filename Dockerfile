@@ -33,12 +33,12 @@
 # carries the SHA-256 of the tarball it downloads, so a version bump means
 # changing the ARG and the checksum together.
 
-ARG WOLFI_BASE_DIGEST=sha256:1d95114038f76513a9ace6fca107d5582b08c65981f81f61cb56bf7fd2ef216d
+ARG WOLFI_BASE_DIGEST=sha256:dbcc3a4a3b1b9e68420a4742940aa6267c97e61811736a5fef0918a06ade1827
 
 # --- Stage 1: builder ---------------------------------------------------------
 FROM cgr.dev/chainguard/wolfi-base:latest@${WOLFI_BASE_DIGEST} AS builder
 
-ARG PYTHON_VERSION=3.14.7
+ARG PYTHON_VERSION=3.14.10
 ARG GLIBC_MIN=2.44
 
 # Toolchain and development headers for the CPython build:
@@ -48,7 +48,12 @@ ARG GLIBC_MIN=2.44
 #                          this makes apk pick the headers of the 2.44 stream
 #                          the base image runs on, not an older one
 #   linux-headers          kernel headers some stdlib modules probe for
-#   openssl-dev            OpenSSL headers, for the ssl and hashlib modules
+#   openssl-dev<4          OpenSSL headers, for the ssl and hashlib modules.
+#                          Held on the 3.x stream: Wolfi's openssl-dev now
+#                          resolves to OpenSSL 4.0, and Python 3.14 cannot
+#                          build _ssl against 4.0 (CPython added 4.0 support
+#                          in 3.15 only). OpenSSL 3.6 is EOL on 2026-11-01;
+#                          drop the pin with the move to Python 3.15
 #   zlib-dev               zlib headers, for the zlib module
 #   bzip2-dev, xz-dev      bzip2 / xz headers, for the bz2 and lzma modules
 #   libffi-dev             libffi headers, for the _ctypes module. Unlike
@@ -66,7 +71,7 @@ ARG GLIBC_MIN=2.44
 # reports its version, which must be at least GLIBC_MIN.
 RUN apk add --no-cache \
       build-base "glibc-dev>=${GLIBC_MIN}" linux-headers \
-      openssl-dev zlib-dev bzip2-dev xz-dev libffi-dev \
+      "openssl-dev<4" zlib-dev bzip2-dev xz-dev libffi-dev \
       ca-certificates-bundle tzdata \
       coreutils findutils gawk \
   && v="$(/usr/lib/ld-linux-*.so.* --version | sed -n '1s/.*version \([0-9.]*\).*/\1/p')" \
@@ -110,7 +115,7 @@ RUN apk add --no-cache \
 # The interpreter binary is statically linked against libpython (there is
 # no libpython3.14.so); its only runtime library dependencies are libc and
 # libm.
-ADD --checksum=sha256:62859805f6fdf25e2bcbf3fa3217801e1996887ca33e6a2af80674bdfa2dbe07 \
+ADD --checksum=sha256:9e4996c19ae5a3df31f10c37723661f71d3455d73bd005f79df7098e5cc13192 \
     https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz /src/
 RUN cd /src && tar xzf Python-${PYTHON_VERSION}.tgz && cd Python-${PYTHON_VERSION} \
   && printf '%s\n' '*disabled*' _dbm _gdbm _sqlite3 _tkinter readline _curses _curses_panel \

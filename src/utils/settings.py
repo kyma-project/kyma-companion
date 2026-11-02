@@ -8,13 +8,12 @@ from pathlib import Path
 from decouple import config
 
 
-class LangfuseMaskingModes(StrEnum):
-    """Enumeration for Langfuse masking modes."""
+class RetrievalMode(StrEnum):
+    """Document retrieval strategy used by the RAG system."""
 
-    DISABLED = "DISABLED"  # No masking, return data as is.
-    PARTIAL = "PARTIAL"  # Pushed only the user input and resource information. Everything else is masked.
-    FILTERED = "FILTERED"  # Tool messages are redacted, and all other messages are sanitized.
-    REDACTED = "REDACTED"  # Everything is redacted.
+    RERANKER = "reranker"  # Query rewrite -> multi-query retrieval -> LLM reranking.
+    VECTOR = "vector"  # Single embedding similarity search; no query rewrite, no reranking.
+    FUSION = "fusion"  # Query rewrite -> multi-query retrieval -> Reciprocal Rank Fusion; no LLM reranking (default).
 
 
 def load_env_from_json() -> Path:
@@ -95,17 +94,23 @@ auth_part = f"{user_part}:{REDIS_PASSWORD}@" if REDIS_USER or REDIS_PASSWORD els
 REDIS_URL = f"redis://{auth_part}{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB_NUMBER}"
 REDIS_TTL = config("REDIS_TTL", default=43200, cast=int)  # Default 12 Hours
 KYMA_AGENT_CONVERSATION_TTL = config("KYMA_AGENT_CONVERSATION_TTL", default=604800, cast=int)  # Default 7 Days
+KYMA_AGENT_CONVERSATION_PREFIX = config("KYMA_AGENT_CONVERSATION_PREFIX", default="kyma_agent_conversation:")
+KYMA_AGENT_CONVERSATION_INSTANCE_PREFIX = config(
+    "KYMA_AGENT_CONVERSATION_INSTANCE_PREFIX", default="kyma_agent_conversation_instance:"
+)
 REDIS_SSL_ENABLED = config("REDIS_SSL_ENABLED", default=False)
-
-# Langfuse
-LANGFUSE_SECRET_KEY = config("LANGFUSE_SECRET_KEY", default="dummy")
-LANGFUSE_PUBLIC_KEY = config("LANGFUSE_PUBLIC_KEY", default="dummy")
-LANGFUSE_HOST = config("LANGFUSE_HOST", default="localhost")
-LANGFUSE_ENABLED = config("LANGFUSE_ENABLED", default="False")
-LANGFUSE_MASKING_MODE = config("LANGFUSE_MASKING_MODE", default="REDACTED", cast=LangfuseMaskingModes)
 
 # RAG
 RAG_RELEVANCY_SCORE_THRESHOLD = config("RAG_RELEVANCY_SCORE_THRESHOLD", default=0.5, cast=float)
+# Document retrieval strategy: "reranker" (default), "vector", or "fusion". Set before starting the agent.
+RETRIEVAL_MODE = config("RETRIEVAL_MODE", default=RetrievalMode.RERANKER, cast=RetrievalMode)
+# Number of documents returned per RAG search.
+RAG_TOP_K = config("RAG_TOP_K", default=5, cast=int)
+# Number of alternative queries the query generator rewrites per search (used by reranker and fusion modes).
+RAG_NUM_QUERIES = config("RAG_NUM_QUERIES", default=4, cast=int)
+
+assert RAG_TOP_K > 0, f"RAG_TOP_K must be positive, got {RAG_TOP_K}"
+assert RAG_NUM_QUERIES > 0, f"RAG_NUM_QUERIES must be positive, got {RAG_NUM_QUERIES}"
 
 # Database
 DATABASE_URL = config("DATABASE_URL", None)
@@ -149,8 +154,19 @@ K8S_RESOURCE_RELATIONS_JSON_FILE = config(
     default=f"{Path(__file__).parent.parent.parent}/config/resource_relations.json",
 )
 
-# set ALLOWED_K8S_DOMAINS to [] if all domains are allowed.
+# JSON list of allowed cluster domains (exact host or parent domain), e.g. ["kyma.ondemand.com"].
+# Required: an empty list rejects every cluster URL, and the app refuses to start without it.
 ALLOWED_K8S_DOMAINS = config("ALLOWED_K8S_DOMAINS", default="[]", cast=json.loads)
+
+
+def validate_allowed_k8s_domains(domains: object) -> None:
+    """Raise RuntimeError unless domains is a non-empty list of non-empty strings."""
+    if not isinstance(domains, list) or len(domains) == 0 or not all(isinstance(d, str) and d.strip() for d in domains):
+        raise RuntimeError(
+            "ALLOWED_K8S_DOMAINS must be a non-empty JSON list of cluster domains, "
+            'for example ["kyma.ondemand.com"]. Refusing to start.'
+        )
+
 
 if "pytest" in sys.modules:
     TEST_CLUSTER_URL = config("TEST_CLUSTER_URL", default="")
