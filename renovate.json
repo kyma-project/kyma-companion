@@ -20,6 +20,9 @@
     "poetry",
     "github-actions"
   ],
+  "lockFileMaintenance": {
+    "enabled": true
+  },
   "packageRules": [
     {
       "matchManagers": [
@@ -65,6 +68,15 @@
       "addLabels": [
         "dependencies"
       ]
+    },
+    {
+      "matchUpdateTypes": [
+        "lockFileMaintenance"
+      ],
+      "matchFileNames": [
+        "tests/blackbox/pyproject.toml"
+      ],
+      "enabled": false
     }
   ]
 }
