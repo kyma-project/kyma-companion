@@ -21,7 +21,8 @@
     "github-actions"
   ],
   "lockFileMaintenance": {
-    "enabled": true
+    "enabled": true,
+    "commitMessageExtra": "({{{packageFile}}})"
   },
   "packageRules": [
     {
@@ -68,15 +69,6 @@
       "addLabels": [
         "dependencies"
       ]
-    },
-    {
-      "matchUpdateTypes": [
-        "lockFileMaintenance"
-      ],
-      "matchFileNames": [
-        "tests/blackbox/pyproject.toml"
-      ],
-      "enabled": false
     }
   ]
 }
