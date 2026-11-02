@@ -8,6 +8,8 @@
     "pyproject.toml",
     "doc_indexer/pyproject.toml",
     "tests/blackbox/pyproject.toml",
+    "Dockerfile",
+    "doc_indexer/Dockerfile",
     ".github/workflows/**"
   ],
   "extends": [
@@ -18,7 +20,8 @@
   ],
   "enabledManagers": [
     "poetry",
-    "github-actions"
+    "github-actions",
+    "dockerfile"
   ],
   "lockFileMaintenance": {
     "enabled": true,
@@ -69,6 +72,25 @@
       "addLabels": [
         "dependencies"
       ]
+    },
+    {
+      "matchManagers": [
+        "dockerfile"
+      ],
+      "matchFileNames": [
+        "Dockerfile",
+        "doc_indexer/Dockerfile"
+      ],
+      "groupName": "Wolfi base image",
+      "addLabels": [
+        "dependencies"
+      ]
+    },
+    {
+      "matchDatasources": [
+        "apk"
+      ],
+      "enabled": false
     }
   ]
 }
