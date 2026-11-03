@@ -33,7 +33,7 @@
 # carries the SHA-256 of the tarball it downloads, so a version bump means
 # changing the ARG and the checksum together.
 
-ARG WOLFI_BASE_DIGEST=sha256:dbcc3a4a3b1b9e68420a4742940aa6267c97e61811736a5fef0918a06ade1827
+ARG WOLFI_BASE_DIGEST=sha256:629d9acaceda7746cd9293365eb0d8e8fabf74e91830b05470cfbee20b53f447
 
 # --- Stage 1: builder ---------------------------------------------------------
 FROM cgr.dev/chainguard/wolfi-base:latest@${WOLFI_BASE_DIGEST} AS builder
