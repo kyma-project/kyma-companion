@@ -4,6 +4,7 @@
     "* 0-2 * * 1"
   ],
   "timezone": "Europe/Berlin",
+  "keepUpdatedLabel": "renovate-keep-updated",
   "includePaths": [
     "pyproject.toml",
     "doc_indexer/pyproject.toml",
@@ -93,6 +94,12 @@
         "apk"
       ],
       "enabled": false
+    },
+    {
+      "matchUpdateTypes": [
+        "lockFileMaintenance"
+      ],
+      "minimumReleaseAgeBehaviour": "timestamp-optional"
     }
   ]
 }
