@@ -69,6 +69,7 @@ DATABASE_USER = str(config("DATABASE_USER", ""))
 DATABASE_PASSWORD = str(config("DATABASE_PASSWORD", default=""))
 
 INDEX_TO_FILE = bool(config("INDEX_TO_FILE", default=False))
+MAX_CHUNK_TOKEN_COUNT = int(config("MAX_CHUNK_TOKEN_COUNT", default=1000))
 
 
 def get_embedding_model_config(name: str) -> ModelConfig:
