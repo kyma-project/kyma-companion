@@ -20,6 +20,10 @@
     "poetry",
     "github-actions"
   ],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "commitMessageExtra": "({{{packageFile}}})"
+  },
   "packageRules": [
     {
       "matchManagers": [
