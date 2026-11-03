@@ -16,8 +16,10 @@
     "config:recommended",
     ":semanticCommits",
     ":semanticCommitTypeAll(chore)",
-    ":semanticCommitScopeDisabled"
+    ":semanticCommitScopeDisabled",
+    ":enableVulnerabilityAlerts"
   ],
+  "minimumReleaseAge": "4 days",
   "enabledManagers": [
     "poetry",
     "github-actions",
