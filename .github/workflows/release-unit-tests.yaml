@@ -1,0 +1,98 @@
+name: Release unit tests
+
+# Runs the unit tests of kyma-companion and the doc indexer for every commit pushed to a release branch.
+# It runs in the cache scope of the release branch, not in the scope of main.
+# The create-release.yml workflow waits for the check runs of this workflow on the release branch head
+# commit before it creates the git tag, so the job names below must match the names used there:
+# - "Release unit tests"
+# - "Release indexer unit tests"
+#
+# workflow_dispatch is for a release branch head that was pushed before this workflow existed or whose run
+# has to be repeated. Start it with "Use workflow from: release-x.y". Starting it from main is rejected.
+#
+# **IMPORTANT**: If any changes are made to how to run the unit tests, make sure to update the steps
+# in the unit-test.yaml and pull-tests-doc-indexer.yaml workflows as well.
+
+on:
+  push:
+    branches:
+      - "release-**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    name: Release unit tests
+    if: startsWith(github.ref, 'refs/heads/release-')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Extract Python version
+        id: python-version
+        run: ./scripts/shell/extract-python-version.sh
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Install dependencies
+        run: poetry install --with dev
+
+      - name: Create config.json
+        run: |
+          mkdir -p config
+          echo '{"mock-key": "mock-value"}' > config/config.json
+
+      - name: Run tests
+        run: poetry run poe test
+
+  unit-tests-indexer:
+    name: Release indexer unit tests
+    if: startsWith(github.ref, 'refs/heads/release-')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Extract Python version
+        id: python-version
+        run: ./scripts/shell/extract-python-version.sh
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Install dependencies
+        working-directory: ./doc_indexer
+        run: poetry install --with test
+
+      - name: Create config.json
+        run: |
+          mkdir -p config
+          echo '{"mock-key": "mock-value"}' > config/config.json
+
+      - name: Run tests
+        working-directory: ./doc_indexer
+        env:
+          LOG_LEVEL: "DEBUG"
+          # Kyma docs path.
+          DOCS_SOURCES_FILE_PATH: "./docs_sources.json"
+          DOCS_PATH: "/test-data"
+          DOCS_TABLE_NAME: "kc_push_release_unit_tests"
+        run: poetry run poe test-unit

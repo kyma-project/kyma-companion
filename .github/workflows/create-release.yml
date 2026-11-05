@@ -19,7 +19,9 @@ run-name: Create release ${{ inputs.name }}
 # 2. Validate the release tag if its formated like x.y.z.
 # 3. Check if the release branch `release-x.y` already exists. If not, fail the workflow.
 # 4. Check if release tag already exists. If yes, fail the workflow.
-# 5. Run unit tests and integration tests from the release branch.
+# 5. Run integration tests from the release branch, and wait for the unit tests of the release
+#    branch head commit. The unit tests run in release-unit-tests.yaml on every push to
+#    `release-**`, so that release branch code never runs in the cache scope of main.
 # 6. Create a git tag from the release branch.
 # 7. Build a container image against the git tag and push it to registry.
 # 8. Create a draft release against the git tag.
@@ -74,106 +76,6 @@ jobs:
           echo "release_branch=$RELEASE_BRANCH" >> "$GITHUB_OUTPUT"
     outputs:
       release_branch: ${{ steps.export-branch-name.outputs.release_branch }}
-
-  run-unit-tests:
-    ## **IMPORTANT**: If any changes are made to how to run the unit tests
-    ## in the release-workflow, make sure to update the steps
-    ## in the unit-test.yaml workflow as well.
-    name: Run unit tests
-    needs: validate-input-params
-    runs-on: ubuntu-latest
-    permissions: read-all
-    env:
-      RELEASE_BRANCH: ${{ needs.validate-input-params.outputs.release_branch }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
-        with: # checkout the release branch.
-          ref: ${{ needs.validate-input-params.outputs.release_branch }}
-
-      - name: Check if the checked out branch is the release branch.
-        run: |
-          git branch --show-current
-          git branch --show-current | grep -q "${RELEASE_BRANCH}"
-
-      - name: Extract Python version
-        id: python-version
-        run: ./scripts/shell/extract-python-version.sh
-
-      - name: Setup Python
-        uses: actions/setup-python@v7
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-
-      - name: Install dependencies
-        run: poetry install --with dev
-
-      - name: Create config.json
-        run: |
-          mkdir -p config
-          echo '{"mock-key": "mock-value"}' > config/config.json
-
-      - name: Run tests
-        run: poetry run poe test
-
-  run-unit-tests-indexer:
-    ## **IMPORTANT**: If any changes are made to how to run the unit tests
-    ## in the release-workflow, make sure to update the steps
-    ## in the unit-test.yaml workflow as well.
-    name: Run indexer unit tests
-    needs: validate-input-params
-    runs-on: ubuntu-latest
-    permissions: read-all
-    env:
-      RELEASE_BRANCH: ${{ needs.validate-input-params.outputs.release_branch }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
-        with: # checkout the release branch.
-          ref: ${{ needs.validate-input-params.outputs.release_branch }}
-
-      - name: Check if the checked out branch is the release branch.
-        run: |
-          git branch --show-current
-          git branch --show-current | grep -q "${RELEASE_BRANCH}"
-
-      - name: Extract Python version
-        id: python-version
-        run: ./scripts/shell/extract-python-version.sh
-
-      - name: Setup Python
-        uses: actions/setup-python@v7
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-
-      - name: Install dependencies
-        working-directory: ./doc_indexer
-        run: poetry install --with test
-
-      - name: Create config.json
-        run: |
-          mkdir -p config
-          echo '{"mock-key": "mock-value"}' > config/config.json
-
-      - name: Run tests
-        working-directory: ./doc_indexer
-        env:
-          LOG_LEVEL: "DEBUG"
-          # Kyma docs path.
-          DOCS_SOURCES_FILE_PATH: "./docs_sources.json"
-          DOCS_PATH: "/test-data"
-          DOCS_TABLE_NAME: "kc_pr_release_${{ inputs.name }}"
-        run: poetry run poe test-unit
 
   run-integration-tests:
     ## **IMPORTANT**: If any changes are made to how to run the integration tests
@@ -287,15 +189,55 @@ jobs:
     outputs:
       sha: ${{ steps.get_sha.outputs.sha }}
     steps:
-      - name: Checkout target branch from another repo
-        uses: actions/checkout@v7
-        with:
-          repository: ${{ env.REPOSITORY_FULL_NAME }}
-          ref: ${{ env.RELEASE_BRANCH }}
-
+      # resolved via the API, the release branch is not checked out.
       - name: Get the last commit's SHA of the release branch
         id: get_sha
-        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: echo "sha=$(gh api "repos/${REPOSITORY_FULL_NAME}/commits/${RELEASE_BRANCH}" --jq .sha)" >> "$GITHUB_OUTPUT"
+
+  wait-for-unit-tests:
+    name: Wait for unit tests of release branch head
+    needs: get-image-sha
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with: # release scripts are used from main branch. The release branch is never checked out here.
+          ref: main
+
+      - name: Setup python
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Install requirements
+        run: |
+          pip install -r ./scripts/python/wait-for-commit-check/requirements.txt
+
+      # The check runs are created by release-unit-tests.yaml (push to release-**).
+      # The script fails after TIMEOUT if a check run does not exist (e.g. the head commit
+      # was pushed before that workflow existed). Fix: run "Release unit tests" on the release branch
+      # (Actions > Release unit tests > Run workflow > Use workflow from: release-x.y) and re-run this workflow.
+      - name: wait for unit tests companion
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GIT_REF: ${{ needs.get-image-sha.outputs.sha }}
+          GIT_CHECK_RUN_NAME: "Release unit tests"
+          INTERVAL: 30
+          TIMEOUT: 900
+        run: |
+          python ./scripts/python/wait-for-commit-check/run.py
+      - name: wait for unit tests indexer
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GIT_REF: ${{ needs.get-image-sha.outputs.sha }}
+          GIT_CHECK_RUN_NAME: "Release indexer unit tests"
+          INTERVAL: 30
+          TIMEOUT: 900
+        run: |
+          python ./scripts/python/wait-for-commit-check/run.py
 
   run-evaluation-tests:
     name: Run evaluation tests
@@ -322,12 +264,11 @@ jobs:
     needs:
       [
         validate-input-params,
-        run-unit-tests,
         run-integration-tests,
         run-evaluation-tests,
         run-e2e-tests-indexer-prerelease,
         run-integration-tests-indexer,
-        run-unit-tests-indexer,
+        wait-for-unit-tests,
       ]
     runs-on: ubuntu-latest
     environment: e2e
