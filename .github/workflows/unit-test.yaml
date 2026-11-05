@@ -44,7 +44,7 @@ jobs:
           fi
 
   ## **IMPORTANT**: If any changes are made to how to run the unit tests. Make sure to update the steps for unit-tests
-  ## in the create-release.yml workflow as well.
+  ## in the release-unit-tests.yaml workflow as well.
   unit-test:
     runs-on: ubuntu-latest
     permissions:
