@@ -82,7 +82,7 @@ jobs:
     ## in the release-workflow, make sure to update
     ## in the run-integration-test.yaml workflow as well.
     name: Run integration tests
-    needs: validate-input-params
+    needs: [validate-input-params, get-image-sha]
     runs-on: ubuntu-latest
     environment: e2e
     permissions: read-all
@@ -91,13 +91,15 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
-        with: # checkout the release branch.
-          ref: ${{ needs.validate-input-params.outputs.release_branch }}
+        with: # checkout the release branch head commit that all checks of this workflow use.
+          ref: ${{ needs.get-image-sha.outputs.sha }}
 
-      - name: Check if the checked out branch is the release branch.
+      - name: Check if the checked out commit is the tested commit.
+        env:
+          TESTED_SHA: ${{ needs.get-image-sha.outputs.sha }}
         run: |
-          git branch --show-current
-          git branch --show-current | grep -q "${RELEASE_BRANCH}"
+          echo "Release branch: ${RELEASE_BRANCH}, tested commit: ${TESTED_SHA}"
+          test "$(git rev-parse HEAD)" = "${TESTED_SHA}"
 
       - name: Extract Python version
         id: python-version
@@ -131,7 +133,7 @@ jobs:
     ## in the release-workflow, make sure to update
     ## in the run-integration-test.yaml workflow as well.
     name: Run indexer integration tests
-    needs: validate-input-params
+    needs: [validate-input-params, get-image-sha]
     runs-on: ubuntu-latest
     environment: e2e
     permissions: read-all
@@ -140,13 +142,15 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
-        with: # checkout the release branch.
-          ref: ${{ needs.validate-input-params.outputs.release_branch }}
+        with: # checkout the release branch head commit that all checks of this workflow use.
+          ref: ${{ needs.get-image-sha.outputs.sha }}
 
-      - name: Check if the checked out branch is the release branch.
+      - name: Check if the checked out commit is the tested commit.
+        env:
+          TESTED_SHA: ${{ needs.get-image-sha.outputs.sha }}
         run: |
-          git branch --show-current
-          git branch --show-current | grep -q "${RELEASE_BRANCH}"
+          echo "Release branch: ${RELEASE_BRANCH}, tested commit: ${TESTED_SHA}"
+          test "$(git rev-parse HEAD)" = "${TESTED_SHA}"
 
       - name: Extract Python version
         id: python-version
