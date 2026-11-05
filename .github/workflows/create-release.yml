@@ -137,10 +137,13 @@ jobs:
         with: # checkout the release branch.
           ref: ${{ needs.validate-input-params.outputs.release_branch }}
 
-      - name: Check if the checked out branch is the release branch.
+      - name: Validate release branch input and checked out branch
         run: |
-          git branch --show-current
-          git branch --show-current | grep -q "${RELEASE_BRANCH}"
+          echo "Expected release branch: ${RELEASE_BRANCH}"
+          echo "${RELEASE_BRANCH}" | grep -Eq '^release-[0-9]+\.[0-9]+$'
+          CURRENT_BRANCH="$(git branch --show-current)"
+          echo "Checked out branch: ${CURRENT_BRANCH}"
+          test "${CURRENT_BRANCH}" = "${RELEASE_BRANCH}"
 
       - name: Extract Python version
         id: python-version
