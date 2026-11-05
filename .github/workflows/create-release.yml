@@ -264,6 +264,7 @@ jobs:
     needs:
       [
         validate-input-params,
+        get-image-sha,
         run-integration-tests,
         run-evaluation-tests,
         run-e2e-tests-indexer-prerelease,
@@ -293,6 +294,19 @@ jobs:
         run: |
           git branch --show-current
           git branch --show-current | grep -q "${RELEASE_BRANCH}"
+
+      # All checks of this workflow ran against TESTED_SHA. If the release branch moved during the run,
+      # the head is an untested commit, so stop instead of tagging it.
+      - name: Check if the release branch head is the tested commit.
+        env:
+          TESTED_SHA: ${{ needs.get-image-sha.outputs.sha }}
+        run: |
+          HEAD_SHA="$(git rev-parse HEAD)"
+          echo "Tested commit: ${TESTED_SHA}, release branch head: ${HEAD_SHA}"
+          if [ "${HEAD_SHA}" != "${TESTED_SHA}" ]; then
+            echo "Error: ${RELEASE_BRANCH} moved during the release run. Start the release again."
+            exit 1
+          fi
 
       - name: Create git tag
         env:
