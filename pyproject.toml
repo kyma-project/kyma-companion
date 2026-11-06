@@ -81,8 +81,9 @@ asyncio_default_fixture_loop_scope = "function"
 [tool.poe.tasks]
 lint = "ruff check ."
 typecheck = "mypy . --pretty"
+typecheck-segmentation-e2e = "mypy --exclude 'a^' scripts/python/conversation_segmentation_e2e_ci.py tests/e2e/conversation_segmentation/segmentation_e2e.py --pretty"
 format = "ruff format . --check"
-codecheck = ["lint", "typecheck", "format"]
+codecheck = ["lint", "typecheck", "typecheck-segmentation-e2e", "format"]
 format-fix = "ruff format ."
 lint-fix = "ruff check . --fix"
 code-fix = ["format-fix", "lint-fix"]

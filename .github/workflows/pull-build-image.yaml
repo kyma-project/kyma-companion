@@ -24,6 +24,8 @@ jobs:
       name: kyma-companion
       dockerfile: Dockerfile
       context: .
+      build-args: |
+        IMAGE_REVISION=${{ github.event.pull_request.head.sha }}
       export-tags: true
       platforms: |
         linux/amd64
