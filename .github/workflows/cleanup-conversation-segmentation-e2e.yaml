@@ -1,0 +1,52 @@
+name: "Cleanup Conversation Segmentation E2E Tables"
+run-name: "Cleanup Conversation Segmentation E2E Tables"
+
+on:
+  workflow_dispatch:
+    inputs:
+      TABLE_PREFIX:
+        description: "Exact KC_SEG_PR_* or KC_SEG_MANUAL_* prefix from an interrupted run"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    name: Drop four abandoned run-scoped HANA tables
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Must be configured without required reviewers and with only the dedicated
+    # cleanup principal secret, so recovery never waits for a second approval.
+    environment: segmentation-e2e-cleanup
+    steps:
+      - name: Checkout trusted cleanup utility
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+
+      - name: Setup Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: "3.14"
+
+      - name: Install pinned HANA client
+        run: |
+          python -m pip install --disable-pip-version-check --require-hashes \
+            -r scripts/requirements/conversation-segmentation-e2e-cleanup.txt
+
+      - name: Drop all four tables for the exact prefix
+        env:
+          SEGMENTATION_E2E_HANA_CLEANUP_CONFIG: ${{ secrets.SEGMENTATION_E2E_HANA_CLEANUP_CONFIG }}
+          TABLE_PREFIX: ${{ inputs.TABLE_PREFIX }}
+        run: |
+          set -euo pipefail
+          umask 077
+          cleanup_config="$(mktemp)"
+          trap 'rm -f "$cleanup_config"' EXIT
+          printf '%s' "$SEGMENTATION_E2E_HANA_CLEANUP_CONFIG" > "$cleanup_config"
+          python scripts/python/conversation_segmentation_e2e_ci.py drop-tables \
+            --cleanup-config "$cleanup_config" \
+            --table-prefix "$TABLE_PREFIX"

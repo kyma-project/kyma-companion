@@ -1,0 +1,78 @@
+name: "Run Conversation Segmentation E2E"
+run-name: "Run Conversation Segmentation E2E for PR #${{ inputs.PR_NUMBER }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      PR_NUMBER:
+        description: "Open PR number whose current immutable head SHA and PR image will be tested"
+        required: true
+        type: string
+
+permissions: read-all
+
+concurrency:
+  group: "segmentation-e2e-pr-${{ inputs.PR_NUMBER }}"
+  cancel-in-progress: false
+
+jobs:
+  resolve-pr:
+    name: Resolve current PR head and wait for its image
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      head_sha: ${{ steps.pr.outputs.head_sha }}
+      head_repo: ${{ steps.pr.outputs.head_repo }}
+    steps:
+      - name: Checkout trusted wait helper
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+
+      - name: Resolve immutable PR metadata
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.PR_NUMBER }}
+        run: |
+          set -euo pipefail
+          [[ "$PR_NUMBER" =~ ^[0-9]+$ ]]
+          pr_json="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}")"
+          [[ "$(jq -r .state <<<"$pr_json")" == "open" ]]
+          [[ "$(jq -r .base.ref <<<"$pr_json")" == "main" ]]
+          head_sha="$(jq -r .head.sha <<<"$pr_json")"
+          head_repo="$(jq -r .head.repo.full_name <<<"$pr_json")"
+          [[ "$head_sha" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$head_repo" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]
+          echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
+          echo "head_repo=$head_repo" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: "3.14"
+          cache: "pip"
+
+      - name: Install wait helper requirements
+        run: pip install -r ./scripts/python/wait-for-commit-check/requirements.txt
+
+      - name: Wait for current PR image build
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GIT_REF: ${{ steps.pr.outputs.head_sha }}
+          REPOSITORY_FULL_NAME: ${{ github.repository }}
+          GIT_CHECK_RUN_NAME: "build / Build image"
+          INTERVAL: 60
+          TIMEOUT: 900
+        run: python ./scripts/python/wait-for-commit-check/run.py
+
+  e2e-tests:
+    needs: resolve-pr
+    uses: kyma-project/kyma-companion/.github/workflows/e2e-tests-conversation-segmentation-reusable.yaml@main
+    with:
+      IMAGE_TAG: "europe-docker.pkg.dev/kyma-project/dev/kyma-companion:PR-${{ inputs.PR_NUMBER }}"
+      EXPECTED_COMMIT_SHA: ${{ needs.resolve-pr.outputs.head_sha }}
+      EXPECTED_PR_NUMBER: ${{ inputs.PR_NUMBER }}
+      TEST_REPO_FULLNAME: ${{ needs.resolve-pr.outputs.head_repo }}
+      TEST_REF: ${{ needs.resolve-pr.outputs.head_sha }}
+      TABLE_PREFIX: "KC_SEG_MANUAL_${{ github.run_id }}_${{ github.run_attempt }}"

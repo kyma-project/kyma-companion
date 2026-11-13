@@ -1,0 +1,84 @@
+name: "E2E Tests for Conversation Segmentation"
+run-name: "Conversation Segmentation E2E for PR #${{ github.event.number }}"
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches:
+      - main
+    paths:
+      - "src/conversation_segmentation/**"
+      - "src/routers/common.py"
+      - "src/services/hana.py"
+      - "src/services/redis.py"
+      - "src/utils/config.py"
+      - "src/utils/logging.py"
+      - "src/utils/settings.py"
+      - "src/utils/singleton_meta.py"
+      - "src/utils/models/**"
+      - "tests/e2e/conversation_segmentation/**"
+      - "tests/unit/scripts/test_conversation_segmentation_e2e_ci.py"
+      - "scripts/python/conversation_segmentation_e2e_ci.py"
+      - "scripts/requirements/conversation-segmentation-e2e-cleanup.txt"
+      - "scripts/shell/run-segmentation-e2e-job.sh"
+      - "Dockerfile"
+      - "pyproject.toml"
+      - "poetry.lock"
+      - ".github/workflows/pull-e2e-tests-conversation-segmentation.yaml"
+      - ".github/workflows/e2e-tests-conversation-segmentation-reusable.yaml"
+      - ".github/workflows/run-e2e-tests-conversation-segmentation.yaml"
+      - ".github/workflows/cleanup-conversation-segmentation-e2e.yaml"
+      - ".github/workflows/pull-build-image.yaml"
+
+permissions: read-all
+
+concurrency:
+  group: "segmentation-e2e-pr-${{ github.event.number }}"
+  cancel-in-progress: false
+
+env:
+  PYTHON_VERSION: "3.14"
+
+jobs:
+  wait-for-build:
+    name: Wait for Companion image build
+    runs-on: ubuntu-latest
+    steps:
+      # Only trusted main code runs before the called workflow's e2e gate passes.
+      - name: Checkout trusted workflow helpers
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+
+      - name: Setup Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Install wait helper requirements
+        run: pip install -r ./scripts/python/wait-for-commit-check/requirements.txt
+
+      - name: Wait for PR Companion image
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GIT_REF: ${{ github.event.pull_request.head.sha }}
+          REPOSITORY_FULL_NAME: ${{ github.repository }}
+          GIT_CHECK_RUN_NAME: "build / Build image"
+          INTERVAL: 60
+          TIMEOUT: 900
+        run: python ./scripts/python/wait-for-commit-check/run.py
+
+  e2e-tests:
+    name: Run conversation segmentation E2E
+    needs: wait-for-build
+    # Bootstrap limitation: reusable workflows are loaded from the base branch.
+    # This workflow starts covering subsequent PRs only after its first merge.
+    uses: kyma-project/kyma-companion/.github/workflows/e2e-tests-conversation-segmentation-reusable.yaml@main
+    with:
+      IMAGE_TAG: "europe-docker.pkg.dev/kyma-project/dev/kyma-companion:PR-${{ github.event.number }}"
+      EXPECTED_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+      EXPECTED_PR_NUMBER: ${{ github.event.number }}
+      TEST_REPO_FULLNAME: ${{ github.event.pull_request.head.repo.full_name }}
+      TEST_REF: ${{ github.event.pull_request.head.sha }}
+      TABLE_PREFIX: "KC_SEG_PR_${{ github.event.number }}_${{ github.run_id }}_${{ github.run_attempt }}"
